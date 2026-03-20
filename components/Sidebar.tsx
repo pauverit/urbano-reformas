@@ -22,7 +22,9 @@ export default function Sidebar() {
     return (
         <div className="w-72 bg-white border-r border-slate-100 h-full flex flex-col p-8 shadow-[10px_0_40px_rgba(0,0,0,0.01)]">
             <div className="flex items-center gap-4 mb-16">
-                <div className="w-10 h-10 bg-slate-950 rounded-2xl flex items-center justify-center text-white font-black text-xs shadow-lg transform rotate-[-5deg]">UR</div>
+                <div className="w-12 h-12">
+                    <img src="/logo.png" alt="UR" className="w-full h-full object-contain" />
+                </div>
                 <div>
                     <span className="block font-black text-slate-900 tracking-tighter text-base uppercase leading-none">Urbano</span>
                     <span className="block font-bold text-slate-300 text-[10px] uppercase tracking-[0.2em] mt-0.5">Reformas v2.0</span>

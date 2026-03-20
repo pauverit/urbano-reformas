@@ -49,7 +49,7 @@ export default function PanelPage() {
                     <div key={stat.nombre} className="premium-card p-8 group hover:scale-[1.02] transition-transform">
                         <div className="flex items-center justify-between mb-6">
                             <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color} transition-colors group-hover:bg-slate-900 group-hover:text-white`}>
-                                <stat.icon size={24} />
+                                <stat.icono size={24} />
                             </div>
                             <ArrowUpRight className="text-slate-200 group-hover:text-slate-400 transition-colors" size={20} />
                         </div>
@@ -81,7 +81,7 @@ export default function PanelPage() {
                                         </div>
                                     </div>
                                     <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${obra.estado === 'En curso' ? 'bg-blue-50 text-blue-600' :
-                                            obra.estado === 'Terminado' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'
+                                        obra.estado === 'Terminado' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'
                                         }`}>
                                         {obra.estado}
                                     </span>

@@ -34,8 +34,8 @@ export default function LoginPage() {
                 <div className="bg-white rounded-[48px] shadow-[0_32px_80px_rgba(0,0,0,0.06)] border border-white/50 p-12 relative z-10">
 
                     <div className="flex flex-col items-center mb-12">
-                        <div className="w-16 h-16 bg-white border border-slate-100 rounded-3xl flex items-center justify-center mb-6 shadow-sm overflow-hidden p-2">
-                            <div className="w-full h-full bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-xs italic">UR</div>
+                        <div className="w-20 h-20 mb-6 drop-shadow-sm">
+                            <img src="/logo.png" alt="Logo Urbano Reformas" className="w-full h-full object-contain" />
                         </div>
                         <h2 className="text-3xl font-black text-slate-900 tracking-tighter uppercase mb-1">Urbano Reformas</h2>
                         <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em]">Portal de Gestión</p>
