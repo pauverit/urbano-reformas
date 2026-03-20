@@ -1,0 +1,115 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+    --background: #f8fafc;
+    --foreground: #0f172a;
+}
+
+body {
+    background-color: #f8fafc;
+    color: #0f172a;
+    font-family: 'Inter', 'Outfit', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Premium Component Classes */
+@layer components {
+    .premium-card {
+        background-color: white;
+        border-radius: 32px;
+        border: 1px solid #f1f5f9;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .premium-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
+    }
+
+    .premium-input {
+        width: 100%;
+        background-color: #f8fafc;
+        border: none;
+        border-radius: 16px;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        color: #1e293b;
+        transition: all 0.2s;
+    }
+
+    .premium-input:focus {
+        outline: none;
+        box-shadow: 0 0 0 2px #3b82f6;
+    }
+
+    .premium-button {
+        background-color: #0f172a;
+        color: white;
+        font-weight: 900;
+        text-transform: uppercase;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        padding: 1.25rem 2rem;
+        border-radius: 16px;
+        transition: all 0.2s;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.1);
+    }
+
+    .premium-button:hover {
+        background-color: #1e293b;
+    }
+
+    .premium-button:active {
+        transform: scale(0.95);
+    }
+
+    .page-transition {
+        animation: fadeIn 0.7s ease-out, slideUp 0.7s ease-out;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Custom Scrollbar Premium */
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+}
