@@ -1,148 +1,93 @@
-"use client";
-import { useState, useRef } from "react";
-import { Wallet, Plus, Save, Share2, FileText, CheckCircle2 } from "lucide-react";
-import SignaturePad from "@/components/SignaturePad";
-import { generarPDFRecibo } from "@/lib/pdfGenerator";
+import { Wallet, Plus, Download, Share2, CheckCircle2, User, Euro } from "lucide-react";
 
 export default function RecibosPage() {
-    const [paso, setPaso] = useState(1);
-    const [datos, setDatos] = useState({ cliente: "", cantidad: 0, concepto: "", firma: "" });
-    const [mostrandoFirma, setMostrandoFirma] = useState(false);
-    const [pdfGenerado, setPdfGenerado] = useState(false);
-
-    const handleSaveFirma = (signature: string) => {
-        setDatos({ ...datos, firma: signature });
-        setMostrandoFirma(false);
-    };
-
-    const sharePDF = async () => {
-        const doc = await generarPDFRecibo(datos);
-        const pdfBlob = doc.output("blob");
-        const file = new File([pdfBlob], `recibo-${datos.cliente}.pdf`, { type: "application/pdf" });
-
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    files: [file],
-                    title: "Recibo de Pago - Urbano Reformas",
-                    text: `Aquí tienes tu recibo por la entrega de ${datos.cantidad} €`,
-                });
-            } catch (err) {
-                doc.save(`recibo-${datos.cliente}.pdf`);
-            }
-        } else {
-            doc.save(`recibo-${datos.cliente}.pdf`);
-        }
-    };
-
     return (
-        <div className="max-w-2xl mx-auto space-y-10 pb-24">
-            <div className="flex items-center justify-between">
+        <div className="max-w-4xl mx-auto space-y-12 page-transition">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tight">Recibos</h1>
-                    <p className="text-slate-400 font-bold uppercase text-xs tracking-widest text-blue-500">Gestión de Cobros y Entregas</p>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tighter uppercase leading-none mb-2">Recibos & Pagos</h1>
+                    <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em]">Gestión de Cobros y Entregas</p>
                 </div>
-                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-                    <Wallet size={24} />
-                </div>
+                <button className="premium-button flex items-center gap-3">
+                    <Plus size={18} />
+                    <span>Nuevo Recibo</span>
+                </button>
             </div>
 
-            <div className="bg-white p-10 rounded-[40px] shadow-sm border border-slate-100 space-y-8">
-                {!pdfGenerado ? (
-                    <>
-                        <div className="space-y-6">
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Nombre del Cliente</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 transition-all"
-                                    placeholder="Ej: Juan Pérez"
-                                    value={datos.cliente}
-                                    onChange={(e) => setDatos({ ...datos, cliente: e.target.value })}
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Cantidad (€)</label>
-                                    <input
-                                        type="number"
-                                        className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 transition-all"
-                                        placeholder="0.00"
-                                        onChange={(e) => setDatos({ ...datos, cantidad: parseFloat(e.target.value) })}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Concepto</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-slate-50 border-none rounded-2xl p-4 font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 transition-all"
-                                        placeholder="Ej: Anticipo Cocina"
-                                        value={datos.concepto}
-                                        onChange={(e) => setDatos({ ...datos, concepto: e.target.value })}
-                                    />
-                                </div>
-                            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div className="md:col-span-2 space-y-8">
+                    <div className="premium-card p-10 bg-white border-none shadow-2xl shadow-blue-50">
+                        <div className="flex items-center justify-between mb-10">
+                            <h3 className="text-xl font-black text-slate-900 uppercase tracking-tight">Recibo Reciente</h3>
+                            <span className="px-4 py-1.5 bg-emerald-50 text-emerald-600 rounded-full text-[9px] font-black uppercase tracking-widest">Firmado</span>
                         </div>
 
-                        <div className="space-y-4">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-slate-400">Validación y Firma</label>
-                            {datos.firma ? (
-                                <div className="relative group cursor-pointer" onClick={() => setMostrandoFirma(true)}>
-                                    <img src={datos.firma} alt="Firma" className="w-full h-32 object-contain bg-slate-50 rounded-2xl border border-slate-100" />
-                                    <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/5 transition-all flex items-center justify-center">
-                                        <span className="opacity-0 group-hover:opacity-100 text-[10px] font-black uppercase text-slate-500">Cambiar Firma</span>
+                        <div className="space-y-10">
+                            <div className="grid grid-cols-2 gap-10">
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3">CLIENTE</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400">
+                                            <User size={18} />
+                                        </div>
+                                        <p className="font-black text-lg text-slate-800 uppercase tracking-tight leading-none">Juan Pérez</p>
                                     </div>
                                 </div>
-                            ) : (
-                                <button
-                                    onClick={() => setMostrandoFirma(true)}
-                                    className="w-full h-32 flex flex-col items-center justify-center gap-2 border-4 border-dashed border-slate-100 rounded-[32px] text-slate-300 hover:border-blue-200 hover:text-blue-400 transition-all"
-                                >
-                                    <Plus size={32} />
-                                    <span className="font-black uppercase text-[10px] tracking-widest">Pulsar para firmar</span>
-                                </button>
-                            )}
-                        </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-3">CANTIDAD</p>
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                                            <Euro size={18} />
+                                        </div>
+                                        <p className="font-black text-3xl text-slate-900 tracking-tighter leading-none">1.250,00 €</p>
+                                    </div>
+                                </div>
+                            </div>
 
-                        <button
-                            disabled={!datos.cliente || !datos.cantidad || !datos.firma}
-                            onClick={() => setPdfGenerado(true)}
-                            className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-100 disabled:text-slate-300 text-white p-6 rounded-[32px] font-black uppercase text-xs tracking-[0.2em] transition-all shadow-xl shadow-blue-100 active:scale-95"
-                        >
-                            Generar Recibo PDF
-                        </button>
-                    </>
-                ) : (
-                    <div className="text-center space-y-10 py-6 animate-in zoom-in-95">
-                        <div className="w-24 h-24 bg-emerald-50 text-emerald-500 rounded-[32px] flex items-center justify-center mx-auto shadow-sm">
-                            <CheckCircle2 size={48} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <h2 className="text-3xl font-black text-slate-900 tracking-tight">Recibo Listo</h2>
-                            <p className="text-slate-400 font-bold text-sm mt-2 uppercase tracking-widest">Documento oficial generado con éxito</p>
-                        </div>
-                        <div className="grid grid-cols-1 gap-4">
-                            <button
-                                onClick={sharePDF}
-                                className="flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white p-6 rounded-[32px] font-black uppercase text-xs tracking-widest transition-all shadow-xl shadow-blue-100"
-                            >
-                                <Share2 size={24} />
-                                Compartir / Enviar Copia
-                            </button>
-                            <button
-                                onClick={() => setPdfGenerado(false)}
-                                className="text-slate-400 font-black uppercase text-[10px] tracking-widest hover:text-slate-600 transition-colors"
-                            >
-                                Crear otro recibo
-                            </button>
+                            <div className="bg-slate-50 p-8 rounded-[32px] border border-slate-100">
+                                <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mb-4">CONCEPTO</p>
+                                <p className="font-bold text-slate-600 leading-relaxed italic">"Entrega a cuenta para inicio de obra en Cocina - Calle Mayor. Incluye compra de materiales y señales."</p>
+                            </div>
+
+                            <div className="flex flex-col sm:flex-row items-center gap-4 pt-6 border-t border-slate-50">
+                                <button className="w-full sm:w-auto bg-slate-900 text-white px-8 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 shadow-lg shadow-slate-100">
+                                    <Download size={18} /> Descargar PDF
+                                </button>
+                                <button className="w-full sm:w-auto bg-white border border-slate-100 text-slate-400 hover:text-blue-600 hover:border-blue-100 px-8 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 transition-all">
+                                    <Share2 size={18} /> Compartir
+                                </button>
+                            </div>
                         </div>
                     </div>
-                )}
-            </div>
+                </div>
 
-            {mostrandoFirma && (
-                <SignaturePad onSave={handleSaveFirma} onClose={() => setMostrandoFirma(false)} />
-            )}
+                <div className="space-y-8">
+                    <div className="premium-card p-10 bg-blue-600 text-white border-none shadow-2xl shadow-blue-100">
+                        <h3 className="text-xl font-black uppercase tracking-tight mb-6">Próximos Cobros</h3>
+                        <div className="space-y-6">
+                            <div className="bg-white/10 p-5 rounded-2xl border border-white/5">
+                                <p className="text-[9px] font-black uppercase tracking-widest opacity-50 mb-1">Pozuelo - Obra 2</p>
+                                <p className="text-lg font-black tracking-tight leading-none">850,00 €</p>
+                                <p className="text-[9px] font-bold text-blue-200 mt-2">Vence en 2 días</p>
+                            </div>
+                            <div className="bg-white/10 p-5 rounded-2xl border border-white/5">
+                                <p className="text-[9px] font-black uppercase tracking-widest opacity-50 mb-1">Baño El Bosque</p>
+                                <p className="text-lg font-black tracking-tight leading-none">2.100,00 €</p>
+                                <p className="text-[9px] font-bold text-blue-200 mt-2">Vence mañana</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="premium-card p-8 border-none bg-slate-900 flex flex-col items-center justify-center text-center py-12">
+                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-emerald-400 mb-4 shadow-xl">
+                            <CheckCircle2 size={24} />
+                        </div>
+                        <p className="text-white font-black uppercase text-xs tracking-widest mb-1">Total Recuperado</p>
+                        <p className="text-emerald-400 text-3xl font-black tracking-tighter">154.200 €</p>
+                        <p className="text-slate-500 text-[9px] font-bold uppercase mt-2 tracking-widest">Año 2026</p>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
