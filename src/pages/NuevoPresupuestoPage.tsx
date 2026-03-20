@@ -113,7 +113,7 @@ export default function NuevoPresupuestoPage() {
 
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
 
             const parts: any[] = [
                 `Eres un experto profesional en reformas integrales de viviendas en España con 20 años de experiencia.
@@ -183,6 +183,8 @@ Unidades válidas: m2 (metros cuadrados), ml (metros lineales), ut (unidades), p
             const msg = err?.message || String(err);
             if (msg.includes('API_KEY') || msg.includes('401') || msg.includes('403')) {
                 setErrorIA('❌ API Key de Gemini inválida o sin permisos. Revisa tu clave en .env');
+            } else if (msg.includes('quota') || msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED')) {
+                setErrorIA('⏳ Has superado el límite gratuito de Gemini. Espera 1 minuto e inténtalo de nuevo.');
             } else if (msg.includes('JSON') || msg.includes('parse')) {
                 setErrorIA('❌ Gemini respondió pero no en formato válido. Inténtalo de nuevo.');
             } else if (msg.includes('SAFETY') || msg.includes('blocked')) {
