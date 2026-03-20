@@ -14,11 +14,22 @@ export async function POST(req: Request) {
             );
         }
 
-        const prompt = `Actúa como un experto en reformas. Analiza la imagen adjunta de esta cocina/baño. Identifica: 
-1. Metros lineales estimados de encimera. 
-2. Número de puntos de luz/enchufes visibles. 
-3. Estado de las paredes (necesita alisado o no).
-Devuelve exclusivamente un objeto JSON con las llaves: items, quantity, unit, confidence_score.`;
+        const prompt = `Actúa como un experto en reformas y construcción. Analiza la imagen adjunta, que puede ser una foto de una estancia (cocina/baño) o un BOCETO/DIBUJO hecho a mano con medidas.
+
+Identifica y extrae:
+1. Metros lineales de encimera o paredes.
+2. Número de puntos de luz, enchufes o tomas de agua.
+3. Tareas necesarias (alisar paredes, demolición, alicatado, etc.).
+4. Si hay un dibujo con medidas, extrae las dimensiones para calcular superficies.
+
+Devuelve EXCLUSIVAMENTE un objeto JSON con esta estructura:
+{
+  "confidence_score": "Alta/Media/Baja",
+  "items": [
+    { "item": "Descripción de la tarea o material", "quantity": número, "unit": "m/m2/ud/ml", "price": 0 }
+  ]
+}
+No incluyas explicaciones, solo el JSON.`;
 
         const result = await model.generateContent({
             contents: [
