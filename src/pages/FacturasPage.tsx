@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { facturasStore, clientesStore, type Factura, type Cliente } from "../lib/store";
+import { facturasStore, clientesStore, empresaStore, type Factura, type Cliente, type Empresa } from "../lib/store";
 import { FileText, Download } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -13,9 +13,10 @@ const ESTADO_COLORES: Record<string, { bg: string; text: string }> = {
 export default function FacturasPage() {
     const [facturas, setFacturas] = useState<Factura[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
+    const [empresa, setEmpresa] = useState<Empresa | null>(null);
     const [cargando, setCargando] = useState(true);
 
-    const cargar = async () => { setCargando(true); setFacturas(await facturasStore.getAll()); setClientes(await clientesStore.getAll()); setCargando(false); };
+    const cargar = async () => { setCargando(true); setFacturas(await facturasStore.getAll()); setClientes(await clientesStore.getAll()); setEmpresa(await empresaStore.get()); setCargando(false); };
     useEffect(() => { cargar(); }, []);
 
     const getCliente = (id: string) => clientes.find(c => c.id === id);
@@ -24,19 +25,39 @@ export default function FacturasPage() {
         const cliente = getCliente(f.cliente_id);
         const doc = new jsPDF();
         const pw = doc.internal.pageSize.getWidth();
-        doc.setFillColor(15, 23, 42); doc.rect(0, 0, pw, 45, "F");
-        doc.setTextColor(255, 255, 255); doc.setFontSize(24); doc.setFont("helvetica", "bold");
-        doc.text("FACTURA", 20, 28); doc.setFontSize(12); doc.text(f.numero || '', pw - 20, 28, { align: "right" });
-        doc.setFontSize(9); doc.text(`Fecha: ${f.fecha}`, pw - 20, 38, { align: "right" });
-        doc.setTextColor(15, 23, 42); doc.setFontSize(10); let y = 58;
+
+        // Header con logo
+        doc.setFillColor(15, 23, 42); doc.rect(0, 0, pw, 50, "F");
+        let logoX = 20;
+        if (empresa?.logo_url && empresa.logo_url.startsWith('data:image')) {
+            try { doc.addImage(empresa.logo_url, "PNG", 15, 8, 34, 34); logoX = 55; } catch { }
+        }
+        doc.setTextColor(255, 255, 255); doc.setFontSize(18); doc.setFont("helvetica", "bold");
+        doc.text(empresa?.nombre_comercial || "URBANO REFORMAS", logoX, 20);
+        doc.setFontSize(8); doc.setFont("helvetica", "normal");
+        if (empresa?.nif) doc.text(`NIF: ${empresa.nif}`, logoX, 28);
+        if (empresa?.direccion) doc.text(`${empresa.direccion}, ${empresa.cp} ${empresa.poblacion}`, logoX, 34);
+        if (empresa?.telefono) doc.text(`Tel: ${empresa.telefono} | ${empresa.email || ''}`, logoX, 40);
+
+        doc.setFontSize(14); doc.setFont("helvetica", "bold");
+        doc.text("FACTURA", pw - 20, 20, { align: "right" });
+        doc.setFontSize(10); doc.text(f.numero || '', pw - 20, 28, { align: "right" });
+        doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.text(`Fecha: ${f.fecha}`, pw - 20, 36, { align: "right" });
+
+        doc.setTextColor(15, 23, 42); doc.setFontSize(10); let y = 62;
         doc.setFont("helvetica", "bold"); doc.text("DATOS DEL CLIENTE:", 20, y); doc.setFont("helvetica", "normal");
         if (cliente) { doc.text(cliente.nombre, 20, y + 7); doc.text(`NIF: ${cliente.nif}`, 20, y + 14); doc.text(`${cliente.direccion}, ${cliente.cp} ${cliente.poblacion}`, 20, y + 21); }
         autoTable(doc, { startY: y + 32, head: [["DESCRIPCIÓN", "CANT.", "UD.", "PRECIO", "TOTAL"]], body: (f.lineas || []).map(l => [l.descripcion.toUpperCase(), String(l.cantidad), l.unidad, `${Number(l.precio).toFixed(2)} €`, `${(l.cantidad * Number(l.precio)).toFixed(2)} €`]), theme: "striped", headStyles: { fillColor: [37, 99, 235], fontSize: 9 }, styles: { fontSize: 8, cellPadding: 5 }, columnStyles: { 0: { cellWidth: 80 }, 4: { halign: "right", fontStyle: "bold" } } });
         const fy = (doc as any).lastAutoTable.finalY + 10;
         doc.setFontSize(10); doc.text(`Base Imponible: ${Number(f.subtotal).toFixed(2)} €`, pw - 20, fy, { align: "right" }); doc.text(`IVA (21%): ${Number(f.iva).toFixed(2)} €`, pw - 20, fy + 7, { align: "right" });
         doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.text(`TOTAL: ${Number(f.total).toFixed(2)} €`, pw - 20, fy + 18, { align: "right" });
+
+        doc.setFontSize(7); doc.setTextColor(150, 150, 150);
+        doc.text(`${empresa?.nombre_comercial || 'Urbano Reformas'} — ${empresa?.nif || ''} — ${empresa?.telefono || ''}`, pw / 2, 289, { align: "center" });
+
         doc.save(`factura-${f.numero}.pdf`);
     };
+
 
     return (
         <div className="space-y-10 page-transition">

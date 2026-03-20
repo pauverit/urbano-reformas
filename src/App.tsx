@@ -10,6 +10,9 @@ import AgendaPage from './pages/AgendaPage';
 import PersonalPage from './pages/PersonalPage';
 import ClientesPage from './pages/ClientesPage';
 import ArticulosPage from './pages/ArticulosPage';
+import MiEmpresaPage from './pages/MiEmpresaPage';
+import GastosPage from './pages/GastosPage';
+import InformesPage from './pages/InformesPage';
 
 function App() {
     return (
@@ -27,6 +30,9 @@ function App() {
                     <Route path="/personal" element={<PersonalPage />} />
                     <Route path="/clientes" element={<ClientesPage />} />
                     <Route path="/articulos" element={<ArticulosPage />} />
+                    <Route path="/gastos" element={<GastosPage />} />
+                    <Route path="/informes" element={<InformesPage />} />
+                    <Route path="/mi-empresa" element={<MiEmpresaPage />} />
                 </Route>
 
                 <Route path="/" element={<Navigate to="/login" replace />} />

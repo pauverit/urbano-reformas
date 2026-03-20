@@ -1,26 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { clientesStore, articulosStore, presupuestosStore, type Cliente, type Articulo, type LineaPresupuesto } from "../lib/store";
+import { clientesStore, articulosStore, presupuestosStore, empresaStore, type Cliente, type Articulo, type LineaPresupuesto, type Empresa } from "../lib/store";
 import SignaturePad from "../components/SignaturePad";
 import { generarPDFPresupuesto } from "../lib/pdfGenerator";
-import { Sparkles, Camera, FileText, Plus, Trash2, Share2, CheckCircle2, Save, Loader2, Search, X, Package } from "lucide-react";
+import { Sparkles, Camera, FileText, Plus, Trash2, Share2, CheckCircle2, Save, Loader2, Search, X, Package, Mic, MicOff, ImagePlus } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const DATOS_SIMULACION: LineaPresupuesto[] = [
     { descripcion: "Desmontado de bañera", cantidad: 1, unidad: "ut", precio: 120 },
     { descripcion: "Desmontado de sanitarios", cantidad: 1, unidad: "ut", precio: 80 },
     { descripcion: "Desmontado de azulejos", cantidad: 12, unidad: "m2", precio: 15 },
-    { descripcion: "Desmontar suelo cerámico del baño", cantidad: 6, unidad: "m2", precio: 18 },
+    { descripcion: "Desmontar suelo cerámico", cantidad: 6, unidad: "m2", precio: 18 },
     { descripcion: "Subir puntos de agua ducha", cantidad: 2, unidad: "ut", precio: 85 },
-    { descripcion: "Cambiar puntos de agua en lavabo", cantidad: 2, unidad: "ut", precio: 75 },
-    { descripcion: "Preparación paredes y suelo para plato ducha", cantidad: 1, unidad: "pa", precio: 250 },
-    { descripcion: "Colocación de plato de ducha", cantidad: 1, unidad: "ut", precio: 180 },
-    { descripcion: "Desmontado de ventana redonda", cantidad: 1, unidad: "ut", precio: 60 },
-    { descripcion: "Colocación ventana cuadrada 0.60x0.60", cantidad: 1, unidad: "ut", precio: 220 },
+    { descripcion: "Cambiar puntos de agua lavabo", cantidad: 2, unidad: "ut", precio: 75 },
+    { descripcion: "Preparación paredes y suelo plato ducha", cantidad: 1, unidad: "pa", precio: 250 },
+    { descripcion: "Colocación plato de ducha", cantidad: 1, unidad: "ut", precio: 180 },
     { descripcion: "Alicatado de paredes", cantidad: 18, unidad: "m2", precio: 35 },
     { descripcion: "Solado del baño", cantidad: 6, unidad: "m2", precio: 38 },
-    { descripcion: "Fabricación estanterías de pladur", cantidad: 1, unidad: "pa", precio: 320 },
-    { descripcion: "Retirada de escombro a contenedor", cantidad: 1, unidad: "pa", precio: 180 },
+    { descripcion: "Fabricación estanterías pladur", cantidad: 1, unidad: "pa", precio: 320 },
+    { descripcion: "Retirada escombro a contenedor", cantidad: 1, unidad: "pa", precio: 180 },
     { descripcion: "Acopio de materiales en planta", cantidad: 1, unidad: "pa", precio: 90 },
 ];
 
@@ -29,6 +27,7 @@ export default function NuevoPresupuestoPage() {
     const [modo, setModo] = useState<'elegir' | 'ia' | 'manual'>('elegir');
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [articulos, setArticulos] = useState<Articulo[]>([]);
+    const [empresa, setEmpresa] = useState<Empresa | null>(null);
     const [clienteId, setClienteId] = useState("");
     const [lineas, setLineas] = useState<LineaPresupuesto[]>([]);
     const [notas, setNotas] = useState("Este presupuesto es solo mano de obra y no incluye vicios ocultos.");
@@ -36,16 +35,23 @@ export default function NuevoPresupuestoPage() {
     const [firmaUrl, setFirmaUrl] = useState<string | null>(null);
     const [finalizado, setFinalizado] = useState(false);
     const [cargandoIA, setCargandoIA] = useState(false);
-    const [imagenPreview, setImagenPreview] = useState<string | null>(null);
+    const [fotos, setFotos] = useState<{ file: File; preview: string }[]>([]);
     const [mostrarArticulos, setMostrarArticulos] = useState(false);
     const [busquedaArt, setBusquedaArt] = useState("");
+    // Audio
+    const [grabando, setGrabando] = useState(false);
+    const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+    const [tiempoGrabacion, setTiempoGrabacion] = useState(0);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const chunksRef = useRef<Blob[]>([]);
+    const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
-        const init = async () => {
+        (async () => {
             setClientes(await clientesStore.getAll());
             setArticulos(await articulosStore.getAll());
-        };
-        init();
+            setEmpresa(await empresaStore.get());
+        })();
     }, []);
 
     const subtotal = lineas.reduce((s, l) => s + l.cantidad * l.precio, 0);
@@ -54,169 +60,205 @@ export default function NuevoPresupuestoPage() {
 
     const addLinea = () => setLineas([...lineas, { descripcion: "", cantidad: 1, unidad: "ut", precio: 0 }]);
     const removeLinea = (i: number) => setLineas(lineas.filter((_, idx) => idx !== i));
-    const updateLinea = (i: number, field: string, value: any) => {
-        const nuevas = [...lineas];
-        nuevas[i] = { ...nuevas[i], [field]: value };
-        setLineas(nuevas);
-    };
+    const updateLinea = (i: number, field: string, value: any) => { const n = [...lineas]; n[i] = { ...n[i], [field]: value }; setLineas(n); };
+    const addDesdeArticulo = (art: Articulo) => { setLineas([...lineas, { descripcion: art.descripcion, cantidad: 1, unidad: art.unidad, precio: Number(art.precio) }]); setMostrarArticulos(false); };
 
-    const addDesdeArticulo = (art: Articulo) => {
-        setLineas([...lineas, { descripcion: art.descripcion, cantidad: 1, unidad: art.unidad, precio: Number(art.precio) }]);
-        setMostrarArticulos(false);
+    // --- Multi-foto ---
+    const addFotos = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onloadend = () => setFotos(prev => [...prev, { file, preview: reader.result as string }]);
+            reader.readAsDataURL(file);
+        });
     };
+    const removeFoto = (i: number) => setFotos(fotos.filter((_, idx) => idx !== i));
 
-    const analizarFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onloadend = () => setImagenPreview(reader.result as string);
-        reader.readAsDataURL(file);
+    // --- Audio ---
+    const iniciarGrabacion = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+            chunksRef.current = [];
+            recorder.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data); };
+            recorder.onstop = () => { setAudioBlob(new Blob(chunksRef.current, { type: 'audio/webm' })); stream.getTracks().forEach(t => t.stop()); };
+            recorder.start();
+            mediaRecorderRef.current = recorder;
+            setGrabando(true);
+            setTiempoGrabacion(0);
+            timerRef.current = setInterval(() => setTiempoGrabacion(t => t + 1), 1000);
+        } catch { alert('No se pudo acceder al micrófono'); }
+    };
+    const pararGrabacion = () => {
+        mediaRecorderRef.current?.stop();
+        setGrabando(false);
+        if (timerRef.current) clearInterval(timerRef.current);
+    };
+    const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
+
+    // --- Analizar con IA ---
+    const analizarConIA = async () => {
+        if (fotos.length === 0 && !audioBlob) return;
         setCargandoIA(true);
-
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey) {
-            await new Promise(r => setTimeout(r, 2500));
-            setLineas(DATOS_SIMULACION);
-            setCargandoIA(false);
-            return;
-        }
-
+        if (!apiKey) { await new Promise(r => setTimeout(r, 2500)); setLineas(DATOS_SIMULACION); setCargandoIA(false); return; }
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const base64 = await fileToBase64(file);
             const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-            const prompt = `Analiza esta imagen de una estancia en reforma o presupuesto de obra.
-      Identifica TODOS los trabajos necesarios y devuelve un JSON estricto:
-      { "items": [{ "descripcion": "TEXTO EN ESPAÑOL MAYÚSCULAS", "cantidad": 1, "unidad": "m2 | ml | ut | pa | kg | h", "precio": 25.50 }] }
-      Si es una foto de un presupuesto escrito, transcribe las líneas exactas con precios estimados.`;
-            const result = await model.generateContent([
-                prompt,
-                { inlineData: { data: base64, mimeType: file.type } }
-            ]);
-            let text = (await result.response).text().replace(/```json|```/g, "").trim();
+            const parts: any[] = [
+                `Eres un experto en reformas de viviendas en España. Analiza las imágenes y/o el audio proporcionado.
+        El audio es una explicación del cliente sobre los trabajos que necesita.
+        Las imágenes son fotos de la obra, estancias o presupuestos escritos a mano.
+        Genera un listado completo de trabajos necesarios en JSON:
+        { "items": [{ "descripcion": "TEXTO EN ESPAÑOL MAYÚSCULAS", "cantidad": 1, "unidad": "m2 | ml | ut | pa | kg | h", "precio": 25.50 }] }
+        Sé detallado y realista con los precios del mercado español.`
+            ];
+            // Añadir fotos
+            for (const foto of fotos) {
+                const base64 = await new Promise<string>((resolve) => { const r = new FileReader(); r.readAsDataURL(foto.file); r.onload = () => resolve((r.result as string).split(',')[1]); });
+                parts.push({ inlineData: { data: base64, mimeType: foto.file.type } });
+            }
+            // Añadir audio
+            if (audioBlob) {
+                const audioBase64 = await new Promise<string>((resolve) => { const r = new FileReader(); r.readAsDataURL(audioBlob); r.onload = () => resolve((r.result as string).split(',')[1]); });
+                parts.push({ inlineData: { data: audioBase64, mimeType: 'audio/webm' } });
+            }
+            const result = await model.generateContent(parts);
+            const text = (await result.response).text().replace(/```json|```/g, "").trim();
             const data = JSON.parse(text);
-            setLineas(data.items.map((it: any) => ({
-                descripcion: it.descripcion || it.description,
-                cantidad: it.cantidad || it.quantity || 1,
-                unidad: it.unidad || it.unit || "ut",
-                precio: it.precio || it.price || 0,
-            })));
-        } catch (err) {
-            console.error("Error IA:", err);
-            setLineas(DATOS_SIMULACION);
-        } finally {
-            setCargandoIA(false);
-        }
+            setLineas(data.items.map((it: any) => ({ descripcion: it.descripcion || it.description, cantidad: it.cantidad || 1, unidad: it.unidad || "ut", precio: it.precio || 0 })));
+        } catch (err) { console.error("Error IA:", err); setLineas(DATOS_SIMULACION); }
+        setCargandoIA(false);
     };
-
-    const fileToBase64 = (file: File): Promise<string> => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve((reader.result as string).split(',')[1]);
-        reader.onerror = reject;
-    });
 
     const guardar = async (estado: 'borrador' | 'enviado' = 'borrador') => {
         if (!clienteId || lineas.length === 0) return;
-        await presupuestosStore.create({
-            fecha: new Date().toLocaleDateString('es-ES'),
-            cliente_id: clienteId,
-            subtotal,
-            iva,
-            total,
-            estado,
-            firma_url: firmaUrl || undefined,
-            notas,
-        }, lineas);
+        await presupuestosStore.create({ fecha: new Date().toLocaleDateString('es-ES'), cliente_id: clienteId, subtotal, iva, total, estado, firma_url: firmaUrl || undefined, notas }, lineas);
         navigate("/presupuestos");
     };
 
     const generarPDF = async () => {
         const cliente = await clientesStore.getById(clienteId);
-        const doc = await generarPDFPresupuesto({
-            cliente: cliente?.nombre || "Cliente sin asignar",
-            items: lineas.map(l => ({ description: l.descripcion, quantity: l.cantidad, unit: l.unidad, price: l.precio })),
-            total: subtotal,
-            firma: firmaUrl || undefined,
-        });
+        const doc = await generarPDFPresupuesto({ empresa: empresa || undefined, cliente: cliente || undefined, items: lineas.map(l => ({ description: l.descripcion, quantity: l.cantidad, unit: l.unidad, price: l.precio })), total: subtotal, firma: firmaUrl || undefined });
         doc.save("presupuesto-urbano.pdf");
         setFinalizado(true);
     };
 
+    // --- PANTALLA: Elegir modo ---
     if (modo === 'elegir') {
         return (
             <div className="max-w-4xl mx-auto space-y-12 page-transition">
-                <div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Nuevo Presupuesto</h1>
-                    <p className="text-blue-500 font-bold uppercase text-[10px] tracking-widest italic mt-2">Elige cómo crear tu presupuesto</p>
-                </div>
+                <div><h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Nuevo Presupuesto</h1><p className="text-blue-500 font-bold uppercase text-[10px] tracking-widest italic mt-2">Elige cómo crear tu presupuesto</p></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <button onClick={() => setModo('manual')} className="premium-card p-12 text-left hover:bg-slate-950 group transition-all duration-500 border-2 border-transparent hover:border-blue-500">
                         <FileText size={48} className="text-blue-500 mb-8 group-hover:text-blue-400" />
                         <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight group-hover:text-white transition-colors mb-3">Manual</h3>
-                        <p className="text-sm font-bold text-slate-400 group-hover:text-slate-300 uppercase tracking-widest leading-relaxed">Añade las líneas de trabajo una por una. Selecciona del catálogo o escribe libremente.</p>
+                        <p className="text-sm font-bold text-slate-400 group-hover:text-slate-300 uppercase tracking-widest leading-relaxed">Añade líneas del catálogo o escribe libremente.</p>
                     </button>
                     <button onClick={() => setModo('ia')} className="premium-card p-12 text-left hover:bg-blue-600 group transition-all duration-500 border-2 border-transparent hover:border-blue-300 bg-gradient-to-br from-blue-50 to-white">
                         <Camera size={48} className="text-blue-600 mb-8 group-hover:text-white" />
-                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight group-hover:text-white transition-colors mb-3">Con Foto (IA)</h3>
-                        <p className="text-sm font-bold text-slate-400 group-hover:text-blue-100 uppercase tracking-widest leading-relaxed">Sube una foto de la obra o un presupuesto escrito y la IA generará las líneas.</p>
+                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight group-hover:text-white transition-colors mb-3">Con Fotos + Audio (IA)</h3>
+                        <p className="text-sm font-bold text-slate-400 group-hover:text-blue-100 uppercase tracking-widest leading-relaxed">Sube varias fotos y graba las instrucciones del cliente.</p>
                     </button>
                 </div>
             </div>
         );
     }
 
-    if (modo === 'ia' && lineas.length === 0) {
+    // --- PANTALLA: IA (subir fotos + grabar audio) ---
+    if (modo === 'ia' && lineas.length === 0 && !cargandoIA) {
         return (
-            <div className="max-w-4xl mx-auto space-y-12 page-transition">
+            <div className="max-w-4xl mx-auto space-y-10 page-transition">
                 <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Presupuesto con IA</h1>
-                        <p className="text-blue-500 font-bold uppercase text-[10px] tracking-widest italic mt-2">Sube una foto y deja que la IA trabaje</p>
-                    </div>
-                    <button onClick={() => setModo('elegir')} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500 transition-colors">← Volver</button>
+                    <div><h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">Presupuesto con IA</h1><p className="text-blue-500 font-bold uppercase text-[10px] tracking-widest italic mt-2">Fotos + audio = presupuesto automático</p></div>
+                    <button onClick={() => { setModo('elegir'); setFotos([]); setAudioBlob(null); }} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500">← Volver</button>
                 </div>
-                {!cargandoIA ? (
-                    <label className="premium-card p-20 flex flex-col items-center justify-center text-center gap-8 cursor-pointer border-2 border-dashed border-blue-200 hover:border-blue-500 transition-all bg-gradient-to-b from-white to-blue-50/30 group">
-                        <div className="w-24 h-24 bg-blue-100 rounded-[32px] flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform"><Camera size={40} /></div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-slate-900 uppercase">Sube una foto u obra</h3>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fotos de estancias, bocetos o presupuestos escritos a mano</p>
-                        </div>
-                        <div className="premium-button flex items-center gap-3"><Sparkles size={18} /> Seleccionar Imagen</div>
-                        <input type="file" className="hidden" accept="image/*" onChange={analizarFoto} />
-                    </label>
-                ) : (
-                    <div className="premium-card p-20 flex flex-col items-center justify-center text-center gap-8">
-                        {imagenPreview && <div className="w-full max-w-md aspect-video rounded-3xl overflow-hidden shadow-xl border-4 border-white mb-4"><img src={imagenPreview} className="w-full h-full object-cover" alt="Foto" /></div>}
-                        <div className="relative"><Loader2 className="animate-spin text-blue-500" size={64} /><Sparkles className="absolute -top-2 -right-2 text-amber-500 animate-pulse" size={24} /></div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Cerebro IA Analizando...</h3>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Identificando trabajos, metros y materiales de la imagen</p>
-                        </div>
-                        <div className="w-64 bg-slate-100 h-2 rounded-full overflow-hidden"><div className="bg-blue-500 h-full rounded-full animate-pulse" style={{ width: '60%' }}></div></div>
+
+                {/* FOTOS */}
+                <div className="premium-card p-8 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3"><Camera size={20} className="text-blue-500" /><h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Fotos de la Obra</h3></div>
+                        <label className="px-5 py-3 bg-blue-50 text-blue-600 rounded-xl text-[10px] font-black uppercase tracking-widest cursor-pointer hover:bg-blue-100 transition-all flex items-center gap-2"><ImagePlus size={16} /> Añadir Fotos<input type="file" accept="image/*" multiple className="hidden" onChange={addFotos} /></label>
                     </div>
-                )}
+                    {fotos.length === 0 ? (
+                        <label className="block border-2 border-dashed border-blue-200 rounded-3xl p-16 text-center cursor-pointer hover:border-blue-500 transition-all bg-gradient-to-b from-white to-blue-50/30">
+                            <Camera size={48} className="mx-auto text-blue-300 mb-4" />
+                            <p className="text-xl font-black text-slate-900 uppercase mb-1">Sube fotos</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Estancias, bocetos o presupuestos escritos a mano</p>
+                            <input type="file" accept="image/*" multiple className="hidden" onChange={addFotos} />
+                        </label>
+                    ) : (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {fotos.map((f, i) => (
+                                <div key={i} className="relative group">
+                                    <img src={f.preview} className="w-full aspect-square object-cover rounded-2xl border-2 border-white shadow-lg" alt="" />
+                                    <button onClick={() => removeFoto(i)} className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"><X size={14} /></button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* AUDIO */}
+                <div className="premium-card p-8 space-y-6">
+                    <div className="flex items-center gap-3"><Mic size={20} className="text-emerald-500" /><h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Grabación de Voz</h3></div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Explica lo que el cliente necesita. La IA lo interpretará junto con las fotos.</p>
+                    <div className="flex items-center gap-6">
+                        {!grabando ? (
+                            <button onClick={iniciarGrabacion} className="flex items-center gap-3 px-8 py-5 bg-emerald-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-emerald-100 hover:bg-emerald-600 active:scale-95 transition-all border-none">
+                                <Mic size={20} /> {audioBlob ? 'Grabar de nuevo' : 'Iniciar Grabación'}
+                            </button>
+                        ) : (
+                            <button onClick={pararGrabacion} className="flex items-center gap-3 px-8 py-5 bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-red-100 hover:bg-red-600 active:scale-95 transition-all animate-pulse border-none">
+                                <MicOff size={20} /> Parar ({formatTime(tiempoGrabacion)})
+                            </button>
+                        )}
+                        {audioBlob && !grabando && (
+                            <div className="flex items-center gap-3">
+                                <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                                <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Audio grabado ({formatTime(tiempoGrabacion)})</span>
+                                <audio controls src={URL.createObjectURL(audioBlob)} className="h-10" />
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* BOTÓN ANALIZAR */}
+                <button onClick={analizarConIA} disabled={fotos.length === 0 && !audioBlob} className="w-full bg-blue-600 text-white p-8 rounded-[32px] flex items-center justify-center gap-4 font-black uppercase text-sm tracking-widest shadow-2xl shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-none">
+                    <Sparkles size={24} /> Analizar con IA ({fotos.length} foto{fotos.length !== 1 && 's'}{audioBlob ? ' + audio' : ''})
+                </button>
             </div>
         );
     }
 
+    // --- PANTALLA: IA analizando ---
+    if (cargandoIA) {
+        return (
+            <div className="max-w-4xl mx-auto page-transition">
+                <div className="premium-card p-20 flex flex-col items-center justify-center text-center gap-8">
+                    {fotos.length > 0 && <div className="flex gap-3 justify-center flex-wrap">{fotos.slice(0, 4).map((f, i) => <img key={i} src={f.preview} className="w-24 h-24 rounded-2xl object-cover shadow-lg border-4 border-white" alt="" />)}</div>}
+                    <div className="relative"><Loader2 className="animate-spin text-blue-500" size={64} /><Sparkles className="absolute -top-2 -right-2 text-amber-500 animate-pulse" size={24} /></div>
+                    <div className="space-y-2">
+                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Cerebro IA Analizando...</h3>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{fotos.length} foto{fotos.length !== 1 && 's'}{audioBlob ? ' + grabación de voz' : ''} — Identificando trabajos y materiales</p>
+                    </div>
+                    <div className="w-64 bg-slate-100 h-2 rounded-full overflow-hidden"><div className="bg-blue-500 h-full rounded-full animate-pulse" style={{ width: '60%' }}></div></div>
+                </div>
+            </div>
+        );
+    }
+
+    // --- PANTALLA: Editor de líneas (común a IA y Manual) ---
     return (
         <div className="max-w-6xl mx-auto space-y-10 pb-24 page-transition">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">{modo === 'ia' ? 'Presupuesto Generado por IA' : 'Nuevo Presupuesto'}</h1>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tight uppercase">{modo === 'ia' ? 'Presupuesto IA' : 'Nuevo Presupuesto'}</h1>
                     <p className="text-blue-500 font-bold uppercase text-[10px] tracking-widest italic mt-2">Edita las líneas y asigna un cliente</p>
                 </div>
-                <button onClick={() => { setModo('elegir'); setLineas([]); }} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500">← Empezar de nuevo</button>
+                <button onClick={() => { setModo('elegir'); setLineas([]); setFotos([]); setAudioBlob(null); }} className="text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500">← Empezar de nuevo</button>
             </div>
-
-            {modo === 'ia' && (
-                <div className="bg-emerald-500 text-white p-6 rounded-3xl flex items-center gap-4 shadow-xl">
-                    <Sparkles size={24} className="text-emerald-200" />
-                    <span className="font-black uppercase tracking-[0.15em] text-[10px]">Análisis de IA Completado — {lineas.length} líneas detectadas</span>
-                </div>
-            )}
+            {modo === 'ia' && <div className="bg-emerald-500 text-white p-6 rounded-3xl flex items-center gap-4 shadow-xl"><Sparkles size={24} className="text-emerald-200" /><span className="font-black uppercase tracking-[0.15em] text-[10px]">IA completado — {lineas.length} líneas detectadas</span></div>}
 
             <div className="premium-card p-8">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Cliente *</label>
@@ -224,7 +266,6 @@ export default function NuevoPresupuestoPage() {
                     <option value="">-- Seleccionar cliente --</option>
                     {clientes.map(c => <option key={c.id} value={c.id}>{c.nombre} ({c.nif || "Sin NIF"})</option>)}
                 </select>
-                {clientes.length === 0 && <p className="text-[10px] font-bold text-amber-500 mt-2 uppercase tracking-widest">⚠ No hay clientes. Crea uno desde el menú "Clientes".</p>}
             </div>
 
             <div className="premium-card overflow-hidden">
@@ -237,26 +278,13 @@ export default function NuevoPresupuestoPage() {
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50/80 text-[10px] uppercase tracking-[0.15em] font-black text-slate-400">
-                                <th className="px-6 py-4 w-1/2">Descripción</th>
-                                <th className="px-4 py-4 text-center">Cant.</th>
-                                <th className="px-4 py-4 text-center">Ud.</th>
-                                <th className="px-4 py-4 text-right">Precio</th>
-                                <th className="px-4 py-4 text-right">Total</th>
-                                <th className="px-4 py-4"></th>
-                            </tr>
-                        </thead>
+                        <thead><tr className="bg-slate-50/80 text-[10px] uppercase tracking-[0.15em] font-black text-slate-400"><th className="px-6 py-4 w-1/2">Descripción</th><th className="px-4 py-4 text-center">Cant.</th><th className="px-4 py-4 text-center">Ud.</th><th className="px-4 py-4 text-right">Precio</th><th className="px-4 py-4 text-right">Total</th><th className="px-4 py-4"></th></tr></thead>
                         <tbody className="divide-y divide-slate-50 text-sm font-bold text-slate-700">
                             {lineas.map((l, i) => (
                                 <tr key={i} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="px-6 py-3"><input value={l.descripcion} onChange={e => updateLinea(i, 'descripcion', e.target.value)} className="bg-transparent border-none p-0 focus:ring-0 w-full text-slate-900 font-bold uppercase text-sm" placeholder="Descripción del trabajo" /></td>
+                                    <td className="px-6 py-3"><input value={l.descripcion} onChange={e => updateLinea(i, 'descripcion', e.target.value)} className="bg-transparent border-none p-0 focus:ring-0 w-full text-slate-900 font-bold uppercase text-sm" placeholder="Descripción" /></td>
                                     <td className="px-4 py-3"><input type="number" value={l.cantidad} onChange={e => updateLinea(i, 'cantidad', parseFloat(e.target.value) || 0)} className="bg-transparent border-none p-0 focus:ring-0 w-16 text-center" /></td>
-                                    <td className="px-4 py-3">
-                                        <select value={l.unidad} onChange={e => updateLinea(i, 'unidad', e.target.value)} className="bg-transparent border-none p-0 focus:ring-0 text-center text-[10px] font-black uppercase text-slate-400">
-                                            <option value="ut">ut</option><option value="m2">m²</option><option value="ml">ml</option><option value="m3">m³</option><option value="kg">kg</option><option value="h">h</option><option value="pa">pa</option>
-                                        </select>
-                                    </td>
+                                    <td className="px-4 py-3"><select value={l.unidad} onChange={e => updateLinea(i, 'unidad', e.target.value)} className="bg-transparent border-none p-0 focus:ring-0 text-center text-[10px] font-black uppercase text-slate-400"><option value="ut">ut</option><option value="m2">m²</option><option value="ml">ml</option><option value="m3">m³</option><option value="kg">kg</option><option value="h">h</option><option value="pa">pa</option></select></td>
                                     <td className="px-4 py-3"><input type="number" step="0.01" value={l.precio} onChange={e => updateLinea(i, 'precio', parseFloat(e.target.value) || 0)} className="bg-transparent border-none p-0 focus:ring-0 w-20 text-right" /></td>
                                     <td className="px-4 py-3 text-right font-black text-slate-900">{(l.cantidad * l.precio).toFixed(2)} €</td>
                                     <td className="px-4 py-3"><button onClick={() => removeLinea(i)} className="p-1 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button></td>
@@ -272,10 +300,7 @@ export default function NuevoPresupuestoPage() {
                 </div>
             </div>
 
-            <div className="premium-card p-8">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Notas / Condiciones</label>
-                <textarea value={notas} onChange={e => setNotas(e.target.value)} rows={3} className="premium-input resize-none" placeholder="Condiciones del presupuesto..." />
-            </div>
+            <div className="premium-card p-8"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Notas / Condiciones</label><textarea value={notas} onChange={e => setNotas(e.target.value)} rows={3} className="premium-input resize-none" /></div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <button onClick={() => guardar('borrador')} className="premium-card p-8 flex items-center justify-center gap-3 text-slate-600 hover:bg-slate-50 transition-all font-black uppercase text-[10px] tracking-widest"><Save size={20} /> Guardar Borrador</button>
@@ -284,41 +309,27 @@ export default function NuevoPresupuestoPage() {
             </div>
 
             {mostrandoFirma && <SignaturePad onSave={s => { setFirmaUrl(s); setMostrandoFirma(false); }} onClose={() => setMostrandoFirma(false)} />}
-
             {mostrarArticulos && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[300] flex items-center justify-center p-6">
                     <div className="bg-white w-full max-w-lg rounded-[40px] shadow-2xl overflow-hidden max-h-[80vh] flex flex-col">
-                        <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50">
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Añadir del Catálogo</h3>
-                            <button onClick={() => setMostrarArticulos(false)} className="p-3 bg-white rounded-xl text-slate-300 hover:text-red-500 border border-slate-100"><X size={18} /></button>
-                        </div>
-                        <div className="p-4 border-b border-slate-50">
-                            <div className="relative">
-                                <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" />
-                                <input value={busquedaArt} onChange={e => setBusquedaArt(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest outline-none" placeholder="Buscar artículo..." />
-                            </div>
-                        </div>
+                        <div className="p-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/50"><h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Añadir del Catálogo</h3><button onClick={() => setMostrarArticulos(false)} className="p-3 bg-white rounded-xl text-slate-300 hover:text-red-500 border border-slate-100"><X size={18} /></button></div>
+                        <div className="p-4 border-b border-slate-50"><div className="relative"><Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" /><input value={busquedaArt} onChange={e => setBusquedaArt(e.target.value)} className="w-full bg-slate-50 border-none rounded-xl py-3 pl-10 pr-4 text-[10px] font-black uppercase tracking-widest outline-none" placeholder="Buscar..." /></div></div>
                         <div className="overflow-y-auto flex-1 p-4 space-y-2">
                             {articulos.filter(a => a.descripcion.toLowerCase().includes(busquedaArt.toLowerCase())).map(a => (
                                 <button key={a.id} onClick={() => addDesdeArticulo(a)} className="w-full text-left p-4 rounded-2xl hover:bg-blue-50 transition-colors flex items-center justify-between group">
-                                    <div>
-                                        <p className="font-bold text-sm text-slate-900 uppercase">{a.descripcion}</p>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{a.unidad} — {Number(a.precio).toFixed(2)} €</p>
-                                    </div>
+                                    <div><p className="font-bold text-sm text-slate-900 uppercase">{a.descripcion}</p><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{a.unidad} — {Number(a.precio).toFixed(2)} €</p></div>
                                     <Plus size={18} className="text-slate-200 group-hover:text-blue-500" />
                                 </button>
                             ))}
-                            {articulos.length === 0 && <p className="text-center text-[10px] font-bold text-slate-300 uppercase tracking-widest py-8">No hay artículos en el catálogo</p>}
                         </div>
                     </div>
                 </div>
             )}
-
             {finalizado && (
                 <div className="fixed inset-0 bg-emerald-500/95 backdrop-blur-xl z-[200] flex flex-col items-center justify-center text-white p-10 text-center space-y-8">
                     <div className="w-32 h-32 bg-white text-emerald-500 rounded-[48px] flex items-center justify-center shadow-2xl animate-bounce"><CheckCircle2 size={64} strokeWidth={2.5} /></div>
                     <h2 className="text-5xl font-black tracking-tighter uppercase">¡PDF Generado!</h2>
-                    <button onClick={() => { guardar('enviado'); }} className="bg-white text-emerald-600 px-10 py-5 rounded-3xl font-black uppercase text-[10px] tracking-widest shadow-xl">Guardar y Volver</button>
+                    <button onClick={() => guardar('enviado')} className="bg-white text-emerald-600 px-10 py-5 rounded-3xl font-black uppercase text-[10px] tracking-widest shadow-xl">Guardar y Volver</button>
                 </div>
             )}
         </div>

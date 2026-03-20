@@ -5,12 +5,14 @@ import {
     Calendar,
     Users,
     Wallet,
-    Settings,
     LogOut,
     ChevronRight,
     UserCircle,
     Package,
-    Receipt
+    Receipt,
+    ShoppingCart,
+    BarChart3,
+    Building2
 } from "lucide-react";
 
 const navItems = [
@@ -20,7 +22,9 @@ const navItems = [
     { name: "Presupuestos", href: "/presupuestos", icon: FileDigit, color: "text-indigo-500" },
     { name: "Facturas", href: "/facturas", icon: Receipt, color: "text-purple-500" },
     { name: "Recibos", href: "/recibos", icon: Wallet, color: "text-emerald-500" },
-    { name: "Agenda", href: "/agenda", icon: Calendar, color: "text-amber-500" },
+    { name: "Gastos", href: "/gastos", icon: ShoppingCart, color: "text-amber-500" },
+    { name: "Informes", href: "/informes", icon: BarChart3, color: "text-rose-500" },
+    { name: "Agenda", href: "/agenda", icon: Calendar, color: "text-teal-500" },
     { name: "Equipo", href: "/personal", icon: Users, color: "text-pink-500" },
 ];
 
@@ -35,7 +39,7 @@ export default function Sidebar() {
                 </div>
                 <div>
                     <span className="block font-black text-slate-900 tracking-tighter text-sm uppercase leading-none">Urbano</span>
-                    <span className="block font-bold text-slate-300 text-[9px] uppercase tracking-[0.2em] mt-0.5">Reformas v2.0</span>
+                    <span className="block font-bold text-slate-300 text-[9px] uppercase tracking-[0.2em] mt-0.5">Reformas v4.0</span>
                 </div>
             </div>
 
@@ -72,10 +76,10 @@ export default function Sidebar() {
             </nav>
 
             <div className="mt-auto space-y-2 pt-6">
-                <div className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-900 transition-colors cursor-pointer border-t border-slate-50 pt-6">
-                    <Settings size={16} />
-                    <span className="font-black text-[9px] uppercase tracking-widest">Ajustes</span>
-                </div>
+                <Link to="/mi-empresa" className="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-900 transition-colors border-t border-slate-50 pt-6">
+                    <Building2 size={16} />
+                    <span className="font-black text-[9px] uppercase tracking-widest">Mi Empresa</span>
+                </Link>
                 <Link to="/login" className="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-700 transition-colors">
                     <LogOut size={16} />
                     <span className="font-black text-[9px] uppercase tracking-widest">Salir</span>

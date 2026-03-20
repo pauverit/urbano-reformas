@@ -244,3 +244,81 @@ export const recibosStore = {
         return data;
     },
 };
+
+// --- Tipos adicionales v4.0 ---
+
+export interface Empresa {
+    id?: string;
+    nombre_comercial: string;
+    razon_social: string;
+    nif: string;
+    direccion: string;
+    cp: string;
+    poblacion: string;
+    provincia: string;
+    telefono: string;
+    email: string;
+    web: string;
+    iban: string;
+    logo_url: string;
+    condiciones_presupuesto: string;
+    serie_factura: string;
+    serie_presupuesto: string;
+    serie_recibo: string;
+}
+
+export interface Gasto {
+    id?: string;
+    numero?: string;
+    fecha: string;
+    proveedor: string;
+    concepto: string;
+    categoria: 'material' | 'herramienta' | 'transporte' | 'subcontrata' | 'suministros' | 'otros';
+    base_imponible: number;
+    iva_porcentaje: number;
+    iva: number;
+    total: number;
+    foto_url: string;
+    pdf_url: string;
+    notas: string;
+}
+
+// --- API Empresa (singleton) ---
+
+export const empresaStore = {
+    get: async (): Promise<Empresa | null> => {
+        const { data, error } = await supabase.from('empresa').select('*').limit(1).single();
+        if (error) { console.error('Error empresa:', error); return null; }
+        return data;
+    },
+    update: async (e: Partial<Empresa>): Promise<void> => {
+        const current = await empresaStore.get();
+        if (current?.id) {
+            const { error } = await supabase.from('empresa').update(e).eq('id', current.id);
+            if (error) console.error('Error actualizar empresa:', error);
+        }
+    },
+};
+
+// --- API Gastos ---
+
+export const gastosStore = {
+    getAll: async (): Promise<Gasto[]> => {
+        const { data, error } = await supabase.from('gastos').select('*').order('created_at', { ascending: false });
+        if (error) { console.error('Error gastos:', error); return []; }
+        return data || [];
+    },
+    create: async (g: Omit<Gasto, 'id' | 'numero'>): Promise<Gasto | null> => {
+        const { data, error } = await supabase.from('gastos').insert(g).select().single();
+        if (error) console.error('Error crear gasto:', error);
+        return data;
+    },
+    update: async (id: string, g: Partial<Gasto>): Promise<void> => {
+        const { error } = await supabase.from('gastos').update(g).eq('id', id);
+        if (error) console.error('Error actualizar gasto:', error);
+    },
+    remove: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('gastos').delete().eq('id', id);
+        if (error) console.error('Error eliminar gasto:', error);
+    },
+};
