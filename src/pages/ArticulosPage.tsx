@@ -8,8 +8,10 @@ export default function ArticulosPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [editando, setEditando] = useState<Articulo | null>(null);
     const [form, setForm] = useState({ descripcion: "", unidad: "ut", precio: 0 });
+    const [cargando, setCargando] = useState(true);
 
-    useEffect(() => { setArticulos(articulosStore.getAll()); }, []);
+    const cargar = async () => { setCargando(true); setArticulos(await articulosStore.getAll()); setCargando(false); };
+    useEffect(() => { cargar(); }, []);
 
     const filtrados = articulos.filter(a => a.descripcion.toLowerCase().includes(busqueda.toLowerCase()));
 
@@ -24,21 +26,21 @@ export default function ArticulosPage() {
         setModalOpen(true);
     };
 
-    const guardar = () => {
+    const guardar = async () => {
         if (!form.descripcion.trim()) return;
         if (editando) {
-            articulosStore.update(editando.id, form);
+            await articulosStore.update(editando.id!, form);
         } else {
-            articulosStore.create(form);
+            await articulosStore.create(form);
         }
-        setArticulos(articulosStore.getAll());
+        await cargar();
         setModalOpen(false);
     };
 
-    const eliminar = (id: string) => {
+    const eliminar = async (id: string) => {
         if (confirm("¿Eliminar este artículo?")) {
-            articulosStore.remove(id);
-            setArticulos(articulosStore.getAll());
+            await articulosStore.remove(id);
+            await cargar();
         }
     };
 
@@ -60,7 +62,9 @@ export default function ArticulosPage() {
                 </div>
             </header>
 
-            {filtrados.length === 0 ? (
+            {cargando ? (
+                <div className="premium-card p-20 text-center"><div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-4">Cargando artículos...</p></div>
+            ) : filtrados.length === 0 ? (
                 <div className="premium-card p-20 text-center space-y-4">
                     <Package size={48} className="mx-auto text-slate-200" />
                     <p className="text-xl font-black text-slate-300 uppercase">Sin artículos registrados</p>
@@ -87,11 +91,11 @@ export default function ArticulosPage() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-5 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">{a.unidad}</td>
-                                    <td className="px-6 py-5 text-right font-black text-slate-900">{a.precio.toFixed(2)} €</td>
+                                    <td className="px-6 py-5 text-right font-black text-slate-900">{Number(a.precio).toFixed(2)} €</td>
                                     <td className="px-8 py-5 text-right">
                                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={() => abrirModal(a)} className="p-2 text-slate-300 hover:text-blue-500"><Edit3 size={16} /></button>
-                                            <button onClick={() => eliminar(a.id)} className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
+                                            <button onClick={() => eliminar(a.id!)} className="p-2 text-slate-300 hover:text-red-500"><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>

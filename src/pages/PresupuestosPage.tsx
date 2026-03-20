@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { presupuestosStore, clientesStore, facturasStore, type Presupuesto, type Cliente } from "../lib/store";
-import { Search, Plus, ChevronRight, Filter, FileText, CheckCircle2, Send, Receipt } from "lucide-react";
+import { Plus, FileText, CheckCircle2, Send, Receipt } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const ESTADO_COLORES: Record<string, { bg: string; text: string }> = {
@@ -14,34 +14,31 @@ export default function PresupuestosPage() {
     const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [filtro, setFiltro] = useState("todos");
+    const [cargando, setCargando] = useState(true);
 
-    useEffect(() => {
-        setPresupuestos(presupuestosStore.getAll());
-        setClientes(clientesStore.getAll());
-    }, []);
+    const cargar = async () => { setCargando(true); setPresupuestos(await presupuestosStore.getAll()); setClientes(await clientesStore.getAll()); setCargando(false); };
+    useEffect(() => { cargar(); }, []);
 
     const getCliente = (id: string) => clientes.find(c => c.id === id);
-
     const filtrados = filtro === "todos" ? presupuestos : presupuestos.filter(p => p.estado === filtro);
 
-    const cambiarEstado = (id: string, estado: Presupuesto['estado']) => {
-        presupuestosStore.update(id, { estado });
-        setPresupuestos(presupuestosStore.getAll());
+    const cambiarEstado = async (id: string, estado: Presupuesto['estado']) => {
+        await presupuestosStore.update(id, { estado });
+        await cargar();
     };
 
-    const pasarAFactura = (pres: Presupuesto) => {
-        facturasStore.create({
+    const pasarAFactura = async (pres: Presupuesto) => {
+        await facturasStore.create({
             fecha: new Date().toLocaleDateString('es-ES'),
-            presupuestoId: pres.id,
-            clienteId: pres.clienteId,
-            lineas: pres.lineas,
+            presupuesto_id: pres.id!,
+            cliente_id: pres.cliente_id,
             subtotal: pres.subtotal,
             iva: pres.iva,
             total: pres.total,
             estado: 'pendiente',
-        });
-        presupuestosStore.update(pres.id, { estado: 'facturado' });
-        setPresupuestos(presupuestosStore.getAll());
+        }, pres.lineas || []);
+        await presupuestosStore.update(pres.id!, { estado: 'facturado' });
+        await cargar();
     };
 
     return (
@@ -65,7 +62,9 @@ export default function PresupuestosPage() {
                 ))}
             </div>
 
-            {filtrados.length === 0 ? (
+            {cargando ? (
+                <div className="premium-card p-20 text-center"><div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div></div>
+            ) : filtrados.length === 0 ? (
                 <div className="premium-card p-20 text-center space-y-4">
                     <FileText size={48} className="mx-auto text-slate-200" />
                     <p className="text-xl font-black text-slate-300 uppercase">Sin presupuestos</p>
@@ -74,7 +73,7 @@ export default function PresupuestosPage() {
             ) : (
                 <div className="space-y-4">
                     {filtrados.map(p => {
-                        const cliente = getCliente(p.clienteId);
+                        const cliente = getCliente(p.cliente_id);
                         const color = ESTADO_COLORES[p.estado] || ESTADO_COLORES.borrador;
                         return (
                             <div key={p.id} className="premium-card group">
@@ -88,23 +87,23 @@ export default function PresupuestosPage() {
                                         <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">
                                             {cliente?.nombre || "Cliente sin asignar"}
                                         </h3>
-                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{p.lineas.length} líneas de trabajo</p>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{(p.lineas || []).length} líneas de trabajo</p>
                                     </div>
 
                                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                                         <div className="text-right">
                                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Total (IVA incl.)</p>
-                                            <p className="text-2xl font-black text-slate-900 tracking-tighter">{p.total.toFixed(2)} €</p>
+                                            <p className="text-2xl font-black text-slate-900 tracking-tighter">{Number(p.total).toFixed(2)} €</p>
                                         </div>
 
                                         <div className="flex gap-2">
                                             {p.estado === 'borrador' && (
-                                                <button onClick={() => cambiarEstado(p.id, 'enviado')} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all" title="Marcar como Enviado">
+                                                <button onClick={() => cambiarEstado(p.id!, 'enviado')} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all" title="Marcar como Enviado">
                                                     <Send size={18} />
                                                 </button>
                                             )}
                                             {p.estado === 'enviado' && (
-                                                <button onClick={() => cambiarEstado(p.id, 'aceptado')} className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all" title="Marcar como Aceptado">
+                                                <button onClick={() => cambiarEstado(p.id!, 'aceptado')} className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all" title="Marcar como Aceptado">
                                                     <CheckCircle2 size={18} />
                                                 </button>
                                             )}

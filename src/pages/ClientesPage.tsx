@@ -8,8 +8,10 @@ export default function ClientesPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [editando, setEditando] = useState<Cliente | null>(null);
     const [form, setForm] = useState({ nombre: "", nif: "", direccion: "", cp: "", poblacion: "", provincia: "", telefono: "", email: "" });
+    const [cargando, setCargando] = useState(true);
 
-    useEffect(() => { setClientes(clientesStore.getAll()); }, []);
+    const cargar = async () => { setCargando(true); setClientes(await clientesStore.getAll()); setCargando(false); };
+    useEffect(() => { cargar(); }, []);
 
     const filtrados = clientes.filter(c =>
         c.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -27,21 +29,21 @@ export default function ClientesPage() {
         setModalOpen(true);
     };
 
-    const guardar = () => {
+    const guardar = async () => {
         if (!form.nombre.trim()) return;
         if (editando) {
-            clientesStore.update(editando.id, form);
+            await clientesStore.update(editando.id!, form);
         } else {
-            clientesStore.create(form);
+            await clientesStore.create(form);
         }
-        setClientes(clientesStore.getAll());
+        await cargar();
         setModalOpen(false);
     };
 
-    const eliminar = (id: string) => {
+    const eliminar = async (id: string) => {
         if (confirm("¿Eliminar este cliente?")) {
-            clientesStore.remove(id);
-            setClientes(clientesStore.getAll());
+            await clientesStore.remove(id);
+            await cargar();
         }
     };
 
@@ -63,7 +65,9 @@ export default function ClientesPage() {
                 </div>
             </header>
 
-            {filtrados.length === 0 ? (
+            {cargando ? (
+                <div className="premium-card p-20 text-center"><div className="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto"></div><p className="text-[10px] font-black text-slate-300 uppercase tracking-widest mt-4">Cargando clientes...</p></div>
+            ) : filtrados.length === 0 ? (
                 <div className="premium-card p-20 text-center space-y-4">
                     <Users size={48} className="mx-auto text-slate-200" />
                     <p className="text-xl font-black text-slate-300 uppercase">Sin clientes registrados</p>
@@ -79,7 +83,7 @@ export default function ClientesPage() {
                                 </div>
                                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button onClick={() => abrirModal(c)} className="p-2 text-slate-400 hover:text-blue-400"><Edit3 size={16} /></button>
-                                    <button onClick={() => eliminar(c.id)} className="p-2 text-slate-400 hover:text-red-400"><Trash2 size={16} /></button>
+                                    <button onClick={() => eliminar(c.id!)} className="p-2 text-slate-400 hover:text-red-400"><Trash2 size={16} /></button>
                                 </div>
                             </div>
                             <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight group-hover:text-white transition-colors">{c.nombre}</h3>
@@ -94,7 +98,6 @@ export default function ClientesPage() {
                 </div>
             )}
 
-            {/* Modal Crear/Editar */}
             {modalOpen && (
                 <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md z-[300] flex items-center justify-center p-6">
                     <div className="bg-white w-full max-w-2xl rounded-[40px] shadow-2xl overflow-hidden">
