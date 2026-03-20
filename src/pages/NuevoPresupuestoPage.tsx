@@ -97,39 +97,103 @@ export default function NuevoPresupuestoPage() {
     const formatTime = (s: number) => `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, '0')}`;
 
     // --- Analizar con IA ---
+    const [errorIA, setErrorIA] = useState<string | null>(null);
+
     const analizarConIA = async () => {
         if (fotos.length === 0 && !audioBlob) return;
+        setErrorIA(null);
         setCargandoIA(true);
+
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-        if (!apiKey) { await new Promise(r => setTimeout(r, 2500)); setLineas(DATOS_SIMULACION); setCargandoIA(false); return; }
+        if (!apiKey || apiKey.trim() === '') {
+            setCargandoIA(false);
+            setErrorIA('⚠️ Falta la API Key de Gemini. Ve a .env y añade VITE_GEMINI_API_KEY=tu_clave. Puedes obtenerla gratis en https://aistudio.google.com/apikey');
+            return;
+        }
+
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
             const parts: any[] = [
-                `Eres un experto en reformas de viviendas en España. Analiza las imágenes y/o el audio proporcionado.
-        El audio es una explicación del cliente sobre los trabajos que necesita.
-        Las imágenes son fotos de la obra, estancias o presupuestos escritos a mano.
-        Genera un listado completo de trabajos necesarios en JSON:
-        { "items": [{ "descripcion": "TEXTO EN ESPAÑOL MAYÚSCULAS", "cantidad": 1, "unidad": "m2 | ml | ut | pa | kg | h", "precio": 25.50 }] }
-        Sé detallado y realista con los precios del mercado español.`
+                `Eres un experto profesional en reformas integrales de viviendas en España con 20 años de experiencia.
+
+ANALIZA CUIDADOSAMENTE lo que ves en las imágenes y/o lo que se dice en el audio. Presta atención a:
+- Qué estancias se ven (baño, cocina, salón, habitación, terraza...)
+- Estado actual (quitar bañera, cambiar azulejos, pintar, suelo, tabiques...)
+- Lo que el cliente pide en el audio (si lo hay)
+- Medidas aproximadas si se pueden estimar
+
+GENERA un presupuesto detallado con TODAS las partidas necesarias para completar la reforma.
+Incluye: demoliciones, albañilería, fontanería, electricidad si aplica, revestimientos, carpintería, pintura, limpieza.
+
+PRECIOS: Usa precios reales del mercado español 2024-2025. Sé preciso.
+
+Responde EXCLUSIVAMENTE con un JSON válido, sin texto adicional, sin markdown:
+{"items":[{"descripcion":"DESCRIPCIÓN CLARA EN MAYÚSCULAS","cantidad":1,"unidad":"m2","precio":25.50}]}
+
+Unidades válidas: m2 (metros cuadrados), ml (metros lineales), ut (unidades), pa (partida alzada), kg, h (horas).`
             ];
+
             // Añadir fotos
             for (const foto of fotos) {
-                const base64 = await new Promise<string>((resolve) => { const r = new FileReader(); r.readAsDataURL(foto.file); r.onload = () => resolve((r.result as string).split(',')[1]); });
+                const base64 = await new Promise<string>((resolve, reject) => {
+                    const r = new FileReader();
+                    r.readAsDataURL(foto.file);
+                    r.onload = () => resolve((r.result as string).split(',')[1]);
+                    r.onerror = reject;
+                });
                 parts.push({ inlineData: { data: base64, mimeType: foto.file.type } });
             }
+
             // Añadir audio
             if (audioBlob) {
-                const audioBase64 = await new Promise<string>((resolve) => { const r = new FileReader(); r.readAsDataURL(audioBlob); r.onload = () => resolve((r.result as string).split(',')[1]); });
-                parts.push({ inlineData: { data: audioBase64, mimeType: 'audio/webm' } });
+                const audioBase64 = await new Promise<string>((resolve, reject) => {
+                    const r = new FileReader();
+                    r.readAsDataURL(audioBlob);
+                    r.onload = () => resolve((r.result as string).split(',')[1]);
+                    r.onerror = reject;
+                });
+                parts.push({ inlineData: { data: audioBase64, mimeType: audioBlob.type || 'audio/webm' } });
             }
+
+            console.log('🤖 Enviando a Gemini:', fotos.length, 'fotos', audioBlob ? '+ audio' : '');
             const result = await model.generateContent(parts);
-            const text = (await result.response).text().replace(/```json|```/g, "").trim();
-            const data = JSON.parse(text);
-            setLineas(data.items.map((it: any) => ({ descripcion: it.descripcion || it.description, cantidad: it.cantidad || 1, unidad: it.unidad || "ut", precio: it.precio || 0 })));
-        } catch (err) { console.error("Error IA:", err); setLineas(DATOS_SIMULACION); }
+            const response = await result.response;
+            const text = response.text();
+            console.log('🤖 Respuesta Gemini:', text);
+
+            // Limpiar respuesta de posibles wrappers markdown
+            const cleanedText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+            const data = JSON.parse(cleanedText);
+
+            if (!data.items || !Array.isArray(data.items) || data.items.length === 0) {
+                throw new Error('La IA no generó líneas de presupuesto válidas');
+            }
+
+            setLineas(data.items.map((it: any) => ({
+                descripcion: (it.descripcion || it.description || '').toString(),
+                cantidad: Number(it.cantidad || it.quantity) || 1,
+                unidad: (it.unidad || it.unit || 'ut').toString(),
+                precio: Number(it.precio || it.price) || 0,
+            })));
+
+        } catch (err: any) {
+            console.error("❌ Error IA:", err);
+            const msg = err?.message || String(err);
+            if (msg.includes('API_KEY') || msg.includes('401') || msg.includes('403')) {
+                setErrorIA('❌ API Key de Gemini inválida o sin permisos. Revisa tu clave en .env');
+            } else if (msg.includes('JSON') || msg.includes('parse')) {
+                setErrorIA('❌ Gemini respondió pero no en formato válido. Inténtalo de nuevo.');
+            } else if (msg.includes('SAFETY') || msg.includes('blocked')) {
+                setErrorIA('❌ Gemini bloqueó la respuesta por seguridad. Prueba con otra foto.');
+            } else {
+                setErrorIA(`❌ Error: ${msg}`);
+            }
+        }
         setCargandoIA(false);
     };
+
 
     const guardar = async (estado: 'borrador' | 'enviado' = 'borrador') => {
         if (!clienteId || lineas.length === 0) return;
@@ -222,6 +286,17 @@ export default function NuevoPresupuestoPage() {
                         )}
                     </div>
                 </div>
+
+                {/* ERROR */}
+                {errorIA && (
+                    <div className="bg-red-50 border-2 border-red-200 rounded-3xl p-6 flex items-start gap-4">
+                        <span className="text-2xl">🚨</span>
+                        <div>
+                            <p className="font-black text-red-700 text-sm uppercase tracking-tight mb-1">Error de IA</p>
+                            <p className="text-red-600 text-sm font-bold">{errorIA}</p>
+                        </div>
+                    </div>
+                )}
 
                 {/* BOTÓN ANALIZAR */}
                 <button onClick={analizarConIA} disabled={fotos.length === 0 && !audioBlob} className="w-full bg-blue-600 text-white p-8 rounded-[32px] flex items-center justify-center gap-4 font-black uppercase text-sm tracking-widest shadow-2xl shadow-blue-100 hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-30 disabled:cursor-not-allowed border-none">
