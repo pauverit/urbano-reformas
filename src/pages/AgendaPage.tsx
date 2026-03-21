@@ -455,6 +455,38 @@ function AgendaInterna() {
 }
 
 export default function AgendaPage() {
+    if (!GOOGLE_CLIENT_ID) {
+        return (
+            <div className="space-y-10 page-transition">
+                <header>
+                    <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2 uppercase">Agenda</h1>
+                    <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">Planificación y Google Calendar</p>
+                </header>
+                <div className="premium-card p-16 text-center space-y-6 max-w-lg mx-auto">
+                    <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto">
+                        <Calendar size={36} className="text-slate-400" />
+                    </div>
+                    <div>
+                        <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight mb-3">Google Calendar no configurado</h2>
+                        <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                            Para activar la agenda, añade la variable de entorno <strong>VITE_GOOGLE_CLIENT_ID</strong> en Vercel con tu Client ID de Google Cloud.
+                        </p>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 text-left space-y-3 text-sm">
+                        <p className="font-black text-slate-700 text-[11px] uppercase tracking-widest">Pasos:</p>
+                        <ol className="space-y-2 text-slate-500 font-medium text-[12px]">
+                            <li>1. Ve a <strong>console.cloud.google.com</strong> → crea un proyecto</li>
+                            <li>2. Activa la <strong>Google Calendar API</strong></li>
+                            <li>3. Crea un <strong>OAuth 2.0 Client ID</strong> (tipo: Web)</li>
+                            <li>4. Añade tu dominio de Vercel en "Orígenes autorizados"</li>
+                            <li>5. En Vercel → Settings → Environment Variables añade:<br/><code className="bg-white border border-slate-200 px-2 py-0.5 rounded text-blue-600 text-[11px]">VITE_GOOGLE_CLIENT_ID = tu-client-id.apps.googleusercontent.com</code></li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
             <AgendaInterna />
