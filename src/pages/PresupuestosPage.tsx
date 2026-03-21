@@ -96,20 +96,21 @@ export default function PresupuestosPage() {
                                             <p className="text-2xl font-black text-slate-900 tracking-tighter">{Number(p.total).toFixed(2)} €</p>
                                         </div>
 
-                                        <div className="flex gap-2">
-                                            {p.estado === 'borrador' && (
-                                                <button onClick={() => cambiarEstado(p.id!, 'enviado')} className="p-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all" title="Marcar como Enviado">
-                                                    <Send size={18} />
-                                                </button>
-                                            )}
-                                            {p.estado === 'enviado' && (
-                                                <button onClick={() => cambiarEstado(p.id!, 'aceptado')} className="p-3 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all" title="Marcar como Aceptado">
-                                                    <CheckCircle2 size={18} />
-                                                </button>
-                                            )}
+                                        <div className="flex gap-4 items-center">
+                                            <select
+                                                value={p.estado}
+                                                onChange={(e) => cambiarEstado(p.id!, e.target.value as any)}
+                                                className="text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 text-slate-600 rounded-lg px-3 py-2 cursor-pointer outline-none hover:border-blue-400 focus:border-blue-500 transition-all"
+                                            >
+                                                <option value="borrador">Borrador</option>
+                                                <option value="enviado">Enviado</option>
+                                                <option value="aceptado">Aceptado</option>
+                                                <option value="facturado">Facturado</option>
+                                            </select>
+
                                             {p.estado === 'aceptado' && (
-                                                <button onClick={() => pasarAFactura(p)} className="p-3 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all" title="Pasar a Factura">
-                                                    <Receipt size={18} />
+                                                <button onClick={() => pasarAFactura(p)} className="p-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all border border-purple-100" title="Generar Factura">
+                                                    <Receipt size={16} />
                                                 </button>
                                             )}
                                         </div>

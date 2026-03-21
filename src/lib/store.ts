@@ -67,7 +67,8 @@ export interface Recibo {
     id?: string;
     numero?: string;
     fecha: string;
-    factura_id: string;
+    factura_id?: string;
+    presupuesto_id?: string;
     cliente_id: string;
     concepto: string;
     importe: number;
