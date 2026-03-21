@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { gastosStore, type Gasto } from "../lib/store";
+import { gastosStore, presupuestosStore, type Gasto, type Presupuesto } from "../lib/store";
 import { Plus, Search, Edit3, Trash2, X, Save, Receipt, Camera, FileUp, Tag, Loader2, Sparkles } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
@@ -12,7 +12,7 @@ const CATEGORIAS: Record<string, { label: string; color: string }> = {
     otros: { label: "Otros", color: "bg-slate-100 text-slate-500" },
 };
 
-const FORM_VACIO = { proveedor: "", concepto: "", categoria: "otros" as Gasto['categoria'], base_imponible: 0, iva_porcentaje: 21, iva: 0, total: 0, foto_url: "", pdf_url: "", notas: "" };
+const FORM_VACIO = { proveedor: "", concepto: "", categoria: "otros" as Gasto['categoria'], base_imponible: 0, iva_porcentaje: 21, iva: 0, total: 0, foto_url: "", pdf_url: "", notas: "", presupuesto_id: "" };
 
 export default function GastosPage() {
     const [gastos, setGastos] = useState<Gasto[]>([]);
@@ -20,12 +20,13 @@ export default function GastosPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [editando, setEditando] = useState<Gasto | null>(null);
     const [form, setForm] = useState(FORM_VACIO);
+    const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
     const [cargando, setCargando] = useState(true);
     const [analizando, setAnalizando] = useState(false);
     const [fotoPreview, setFotoPreview] = useState<string | null>(null);
     const [mesFiltro, setMesFiltro] = useState("");
 
-    const cargar = async () => { setCargando(true); setGastos(await gastosStore.getAll()); setCargando(false); };
+    const cargar = async () => { setCargando(true); setGastos(await gastosStore.getAll()); setPresupuestos(await presupuestosStore.getAll()); setCargando(false); };
     useEffect(() => { cargar(); }, []);
 
     const totalMes = gastos.reduce((s, g) => s + Number(g.total), 0);
@@ -83,7 +84,8 @@ export default function GastosPage() {
 
     const guardar = async () => {
         if (!form.concepto && !form.proveedor) return;
-        const data = { ...form, fecha: new Date().toLocaleDateString('es-ES'), foto_url: fotoPreview || '', pdf_url: form.pdf_url };
+        const data: any = { ...form, fecha: new Date().toLocaleDateString('es-ES'), foto_url: fotoPreview || '', pdf_url: form.pdf_url };
+        if (!data.presupuesto_id) delete data.presupuesto_id; // Clean empty string
         if (editando) { await gastosStore.update(editando.id!, data); }
         else { await gastosStore.create(data); }
         await cargar(); setModalOpen(false); setForm(FORM_VACIO); setFotoPreview(null); setEditando(null);
@@ -116,7 +118,9 @@ export default function GastosPage() {
                                         <div className="flex items-center gap-5">
                                             {g.foto_url ? <img src={g.foto_url} className="w-12 h-12 rounded-xl object-cover" alt="" /> : <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center"><Receipt size={20} /></div>}
                                             <div>
-                                                <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">{g.numero}</span><span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${cat.color}`}>{cat.label}</span></div>
+                                                <div className="flex items-center gap-2 mb-1"><span className="text-[10px] font-black text-amber-500 bg-amber-50 px-2 py-0.5 rounded-full">{g.numero}</span><span className={`text-[10px] font-black px-2 py-0.5 rounded-full ${cat.color}`}>{cat.label}</span>
+                                                    {g.presupuesto_id && <span className="text-[10px] font-black text-blue-500 bg-blue-50 px-2 py-0.5 rounded-full">Pto vinculado</span>}
+                                                </div>
                                                 <p className="font-black text-sm text-slate-900 uppercase">{g.proveedor || g.concepto}</p>
                                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{g.concepto} • {g.fecha}</p>
                                             </div>
@@ -162,7 +166,8 @@ export default function GastosPage() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Proveedor</label><input value={form.proveedor} onChange={e => updateForm('proveedor', e.target.value)} className="premium-input" placeholder="Leroy Merlin, Repsol..." /></div>
                                 <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Categoría</label><select value={form.categoria} onChange={e => updateForm('categoria', e.target.value)} className="premium-input">{Object.entries(CATEGORIAS).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}</select></div>
-                                <div className="md:col-span-2"><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Concepto</label><input value={form.concepto} onChange={e => updateForm('concepto', e.target.value)} className="premium-input" placeholder="Azulejos reforma baño" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Concepto</label><input value={form.concepto} onChange={e => updateForm('concepto', e.target.value)} className="premium-input" placeholder="Azulejos reforma baño" /></div>
+                                <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Vincular a Obra / Presupuesto</label><select value={form.presupuesto_id || ""} onChange={e => updateForm('presupuesto_id', e.target.value)} className="premium-input"><option value="">Ninguno (Gasto general)</option>{presupuestos.map(p => <option key={p.id} value={p.id}>{p.numero} - {p.total}€</option>)}</select></div>
                                 <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Base Imponible (€)</label><input type="number" step="0.01" value={form.base_imponible} onChange={e => updateForm('base_imponible', parseFloat(e.target.value) || 0)} className="premium-input" /></div>
                                 <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">% IVA</label><input type="number" step="1" value={form.iva_porcentaje} onChange={e => updateForm('iva_porcentaje', parseFloat(e.target.value) || 0)} className="premium-input" /></div>
                                 <div><label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">IVA (€)</label><input type="number" step="0.01" value={form.iva.toFixed(2)} readOnly className="premium-input bg-slate-50 text-slate-400" /></div>

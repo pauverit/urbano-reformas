@@ -282,6 +282,17 @@ export interface Gasto {
     foto_url: string;
     pdf_url: string;
     notas: string;
+    presupuesto_id?: string;
+}
+
+export interface ObraFoto {
+    id?: string;
+    presupuesto_id: string;
+    url: string;
+    titulo: string;
+    fase: 'antes' | 'durante' | 'despues';
+    fecha: string;
+    created_at?: string;
 }
 
 // --- API Empresa (singleton) ---
@@ -321,5 +332,24 @@ export const gastosStore = {
     remove: async (id: string): Promise<void> => {
         const { error } = await supabase.from('gastos').delete().eq('id', id);
         if (error) console.error('Error eliminar gasto:', error);
+    },
+};
+
+// --- API Obra Fotos ---
+
+export const obraFotosStore = {
+    getAllByPresupuesto: async (presupuestoId: string): Promise<ObraFoto[]> => {
+        const { data, error } = await supabase.from('obra_fotos').select('*').eq('presupuesto_id', presupuestoId).order('created_at', { ascending: false });
+        if (error) { console.error('Error obra fotos:', error); return []; }
+        return data || [];
+    },
+    create: async (foto: Omit<ObraFoto, 'id' | 'created_at'>): Promise<ObraFoto | null> => {
+        const { data, error } = await supabase.from('obra_fotos').insert(foto).select().single();
+        if (error) { console.error('Error crear foto de obra:', error); return null; }
+        return data;
+    },
+    remove: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('obra_fotos').delete().eq('id', id);
+        if (error) console.error('Error eliminar foto:', error);
     },
 };

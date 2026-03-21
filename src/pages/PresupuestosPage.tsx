@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { presupuestosStore, clientesStore, facturasStore, recibosStore, type Presupuesto, type Cliente, type Recibo } from "../lib/store";
+import { presupuestosStore, clientesStore, facturasStore, recibosStore, gastosStore, type Presupuesto, type Cliente, type Recibo, type Gasto } from "../lib/store";
 import { Plus, FileText, CheckCircle2, Send, Receipt } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -14,10 +14,11 @@ export default function PresupuestosPage() {
     const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [recibos, setRecibos] = useState<Recibo[]>([]);
+    const [gastos, setGastos] = useState<Gasto[]>([]);
     const [filtro, setFiltro] = useState("todos");
     const [cargando, setCargando] = useState(true);
 
-    const cargar = async () => { setCargando(true); setPresupuestos(await presupuestosStore.getAll()); setClientes(await clientesStore.getAll()); setRecibos(await recibosStore.getAll()); setCargando(false); };
+    const cargar = async () => { setCargando(true); setPresupuestos(await presupuestosStore.getAll()); setClientes(await clientesStore.getAll()); setRecibos(await recibosStore.getAll()); setGastos(await gastosStore.getAll()); setCargando(false); };
     useEffect(() => { cargar(); }, []);
 
     const getCliente = (id: string) => clientes.find(c => c.id === id);
@@ -81,6 +82,12 @@ export default function PresupuestosPage() {
                         const entregado = recibosPto.reduce((sum, r) => sum + Number(r.importe), 0);
                         const restante = Number(p.total) - entregado;
 
+                        // Rentabilidad
+                        const gastosPto = gastos.filter(g => g.presupuesto_id === p.id);
+                        const totalGastos = gastosPto.reduce((sum, g) => sum + Number(g.total), 0);
+                        const beneficio = Number(p.total) - totalGastos;
+                        const margen = Number(p.total) > 0 ? (beneficio / Number(p.total)) * 100 : 0;
+
                         return (
                             <div key={p.id} className="premium-card group">
                                 <div className="flex flex-col lg:flex-row lg:items-center p-6 gap-6">
@@ -112,7 +119,22 @@ export default function PresupuestosPage() {
                                             )}
                                         </div>
 
-                                        <div className="flex gap-4 items-center">
+                                        <div className="text-right border-l border-slate-100 pl-6">
+                                            <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Rentabilidad</p>
+                                            <p className={`text-2xl font-black tracking-tighter ${beneficio >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                {beneficio > 0 ? '+' : ''}{beneficio.toFixed(2)} €
+                                            </p>
+                                            <div className="mt-2 flex flex-col items-end gap-1">
+                                                <span className="text-[10px] font-black text-slate-500 bg-slate-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                    Costes: {totalGastos.toFixed(2)} €
+                                                </span>
+                                                <span className={`text-[10px] font-black px-2 py-0.5 rounded-md uppercase tracking-widest ${margen >= 30 ? 'bg-emerald-50 text-emerald-600' : margen > 0 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`}>
+                                                    Margen: {margen.toFixed(1)}%
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-4 items-center pl-4 border-l border-slate-100">
                                             <select
                                                 value={p.estado}
                                                 onChange={(e) => cambiarEstado(p.id!, e.target.value as any)}
