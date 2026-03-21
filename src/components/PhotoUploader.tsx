@@ -23,7 +23,7 @@ export default function PhotoUploader({ onAnalysisComplete }: PhotoUploaderProps
         setLoading(true);
         try {
             const base64Data = await fileToBase64(file);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
             const prompt = `Analiza esta imagen de una estancia en reforma o boceto de obra. 
       Identifica los elementos necesarios para un presupuesto de reforma (metros de pared, puntos de luz, desescombro, etc).

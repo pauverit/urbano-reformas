@@ -70,7 +70,7 @@ export default function GastosPage() {
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
             const base64 = await new Promise<string>((resolve, reject) => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => resolve((r.result as string).split(',')[1]); r.onerror = reject; });
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+            const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
             const result = await model.generateContent([
                 `Analiza este ticket/factura y extrae: { "proveedor": "", "concepto": "", "categoria": "material|herramienta|transporte|subcontrata|suministros|otros", "base_imponible": 0, "iva": 0, "total": 0 }. Responde SOLO con JSON.`,
                 { inlineData: { data: base64, mimeType: file.type } }
