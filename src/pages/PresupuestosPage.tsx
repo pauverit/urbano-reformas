@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { presupuestosStore, clientesStore, facturasStore, type Presupuesto, type Cliente } from "../lib/store";
+import { presupuestosStore, clientesStore, facturasStore, recibosStore, type Presupuesto, type Cliente, type Recibo } from "../lib/store";
 import { Plus, FileText, CheckCircle2, Send, Receipt } from "lucide-react";
 import { Link } from "react-router-dom";
 
@@ -13,10 +13,11 @@ const ESTADO_COLORES: Record<string, { bg: string; text: string }> = {
 export default function PresupuestosPage() {
     const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
+    const [recibos, setRecibos] = useState<Recibo[]>([]);
     const [filtro, setFiltro] = useState("todos");
     const [cargando, setCargando] = useState(true);
 
-    const cargar = async () => { setCargando(true); setPresupuestos(await presupuestosStore.getAll()); setClientes(await clientesStore.getAll()); setCargando(false); };
+    const cargar = async () => { setCargando(true); setPresupuestos(await presupuestosStore.getAll()); setClientes(await clientesStore.getAll()); setRecibos(await recibosStore.getAll()); setCargando(false); };
     useEffect(() => { cargar(); }, []);
 
     const getCliente = (id: string) => clientes.find(c => c.id === id);
@@ -75,6 +76,11 @@ export default function PresupuestosPage() {
                     {filtrados.map(p => {
                         const cliente = getCliente(p.cliente_id);
                         const color = ESTADO_COLORES[p.estado] || ESTADO_COLORES.borrador;
+
+                        const recibosPto = recibos.filter(r => r.presupuesto_id === p.id);
+                        const entregado = recibosPto.reduce((sum, r) => sum + Number(r.importe), 0);
+                        const restante = Number(p.total) - entregado;
+
                         return (
                             <div key={p.id} className="premium-card group">
                                 <div className="flex flex-col lg:flex-row lg:items-center p-6 gap-6">
@@ -94,6 +100,16 @@ export default function PresupuestosPage() {
                                         <div className="text-right">
                                             <p className="text-[10px] font-black text-slate-300 uppercase tracking-widest">Total (IVA incl.)</p>
                                             <p className="text-2xl font-black text-slate-900 tracking-tighter">{Number(p.total).toFixed(2)} €</p>
+                                            {entregado > 0 && (
+                                                <div className="mt-2 flex flex-col items-end gap-1">
+                                                    <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                        Cobrado: {entregado.toFixed(2)} €
+                                                    </span>
+                                                    <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                        Pte: {restante.toFixed(2)} €
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex gap-4 items-center">

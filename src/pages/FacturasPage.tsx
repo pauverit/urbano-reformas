@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { facturasStore, clientesStore, empresaStore, type Factura, type Cliente, type Empresa } from "../lib/store";
+import { facturasStore, clientesStore, empresaStore, recibosStore, type Factura, type Cliente, type Empresa, type Recibo } from "../lib/store";
 import { FileText, Download } from "lucide-react";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -13,10 +13,11 @@ const ESTADO_COLORES: Record<string, { bg: string; text: string }> = {
 export default function FacturasPage() {
     const [facturas, setFacturas] = useState<Factura[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
+    const [recibos, setRecibos] = useState<Recibo[]>([]);
     const [empresa, setEmpresa] = useState<Empresa | null>(null);
     const [cargando, setCargando] = useState(true);
 
-    const cargar = async () => { setCargando(true); setFacturas(await facturasStore.getAll()); setClientes(await clientesStore.getAll()); setEmpresa(await empresaStore.get()); setCargando(false); };
+    const cargar = async () => { setCargando(true); setFacturas(await facturasStore.getAll()); setClientes(await clientesStore.getAll()); setRecibos(await recibosStore.getAll()); setEmpresa(await empresaStore.get()); setCargando(false); };
     useEffect(() => { cargar(); }, []);
 
     const getCliente = (id: string) => clientes.find(c => c.id === id);
@@ -71,6 +72,11 @@ export default function FacturasPage() {
                     {facturas.map(f => {
                         const cliente = getCliente(f.cliente_id);
                         const color = ESTADO_COLORES[f.estado];
+
+                        const recibosFactura = recibos.filter(r => r.factura_id === f.id || (f.presupuesto_id && r.presupuesto_id === f.presupuesto_id));
+                        const entregado = recibosFactura.reduce((sum, r) => sum + Number(r.importe), 0);
+                        const restante = Number(f.total) - entregado;
+
                         return (
                             <div key={f.id} className="premium-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 group border-l-4 border-l-purple-500">
                                 <div className="flex items-center gap-6">
@@ -82,7 +88,20 @@ export default function FacturasPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-6">
-                                    <div className="text-right"><p className="text-2xl font-black text-slate-900 tracking-tighter">{Number(f.total).toFixed(2)} €</p></div>
+                                    <div className="text-right flex flex-col items-end">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Total</p>
+                                        <p className="text-2xl font-black text-slate-900 tracking-tighter leading-none">{Number(f.total).toFixed(2)} €</p>
+                                        {entregado > 0 && (
+                                            <div className="mt-2 flex flex-col items-end gap-1">
+                                                <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                    Cobrado: {entregado.toFixed(2)} €
+                                                </span>
+                                                <span className="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md uppercase tracking-widest">
+                                                    Pte: {restante.toFixed(2)} €
+                                                </span>
+                                            </div>
+                                        )}
+                                    </div>
                                     <button onClick={() => descargarPDF(f)} className="p-4 bg-slate-50 rounded-2xl text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all"><Download size={22} /></button>
                                 </div>
                             </div>
