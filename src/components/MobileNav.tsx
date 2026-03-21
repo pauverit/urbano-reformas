@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 const navItems = [
-    { name: "Panel", href: "/panel", icon: LayoutDashboard },
+    { name: "Inicio", href: "/panel", icon: LayoutDashboard },
     { name: "Ptos", href: "/presupuestos", icon: FileDigit },
     { name: "Clientes", href: "/clientes", icon: UserCircle },
     { name: "Artic.", href: "/articulos", icon: Package },

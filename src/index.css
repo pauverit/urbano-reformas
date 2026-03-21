@@ -14,19 +14,7 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-    font-family: 'Bebas Neue', sans-serif !important;
-    letter-spacing: 0.03em;
-    font-weight: 400 !important;
-    /* Display font */
-    transform: scaleY(1.05);
-    /* Slightly taller and heavier look */
-}
+
 
 /* Premium Component Classes */
 @layer components {

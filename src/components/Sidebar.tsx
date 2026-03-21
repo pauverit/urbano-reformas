@@ -15,17 +15,16 @@ import {
     Building2
 } from "lucide-react";
 
-const navItems = [
-    { name: "Dashboard", href: "/panel", icon: LayoutDashboard, color: "text-blue-500" },
-    { name: "Clientes", href: "/clientes", icon: UserCircle, color: "text-cyan-500" },
-    { name: "Artículos", href: "/articulos", icon: Package, color: "text-orange-500" },
-    { name: "Presupuestos", href: "/presupuestos", icon: FileDigit, color: "text-indigo-500" },
-    { name: "Facturas", href: "/facturas", icon: Receipt, color: "text-purple-500" },
-    { name: "Recibos", href: "/recibos", icon: Wallet, color: "text-emerald-500" },
-    { name: "Gastos", href: "/gastos", icon: ShoppingCart, color: "text-amber-500" },
-    { name: "Informes", href: "/informes", icon: BarChart3, color: "text-rose-500" },
-    { name: "Agenda", href: "/agenda", icon: Calendar, color: "text-teal-500" },
-    { name: "Equipo", href: "/personal", icon: Users, color: "text-pink-500" },
+{ name: "Inicio", href: "/panel", icon: LayoutDashboard, color: "text-blue-500" },
+{ name: "Clientes", href: "/clientes", icon: UserCircle, color: "text-cyan-500" },
+{ name: "Artículos", href: "/articulos", icon: Package, color: "text-orange-500" },
+{ name: "Presupuestos", href: "/presupuestos", icon: FileDigit, color: "text-indigo-500" },
+{ name: "Facturas", href: "/facturas", icon: Receipt, color: "text-purple-500" },
+{ name: "Recibos", href: "/recibos", icon: Wallet, color: "text-emerald-500" },
+{ name: "Gastos", href: "/gastos", icon: ShoppingCart, color: "text-amber-500" },
+{ name: "Informes", href: "/informes", icon: BarChart3, color: "text-rose-500" },
+{ name: "Agenda", href: "/agenda", icon: Calendar, color: "text-teal-500" },
+{ name: "Equipo", href: "/personal", icon: Users, color: "text-pink-500" },
 ];
 
 export default function Sidebar() {

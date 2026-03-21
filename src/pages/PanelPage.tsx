@@ -6,17 +6,46 @@ import {
     TrendingUp,
     CheckCircle2,
     Clock,
-    AlertCircle
+    AlertCircle,
+    FileDigit
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { presupuestosStore, facturasStore, recibosStore, type Presupuesto, type Factura, type Recibo } from "../lib/store";
 
 export default function PanelPage() {
+    const [presupuestos, setPresupuestos] = useState<Presupuesto[]>([]);
+    const [facturas, setFacturas] = useState<Factura[]>([]);
+    const [recibos, setRecibos] = useState<Recibo[]>([]);
+    const [cargando, setCargando] = useState(true);
+
+    useEffect(() => {
+        const cargar = async () => {
+            setCargando(true);
+            setPresupuestos(await presupuestosStore.getAll());
+            setFacturas(await facturasStore.getAll());
+            setRecibos(await recibosStore.getAll());
+            setCargando(false);
+        };
+        cargar();
+    }, []);
+
+    const obrasActivas = presupuestos.filter(p => p.estado === 'aceptado').length;
+    const totalPresupuestos = presupuestos.length;
+
+    // Total pendiente = sum(facturas) - sum(recibos)
+    const sumFacturas = facturas.reduce((acc, f) => acc + Number(f.total), 0);
+    const sumRecibos = recibos.reduce((acc, r) => acc + Number(r.importe), 0);
+    const pendiente = sumFacturas - sumRecibos;
+
     const estadisticas = [
-        { titulo: "Obras Activas", valor: "12", cambio: "+2", icono: MapPin, color: "bg-blue-500" },
-        { titulo: "Presupuestos", valor: "45", cambio: "+8", icono: TrendingUp, color: "bg-emerald-500" },
-        { titulo: "Personal", valor: "28", cambio: "0", icono: CheckCircle2, color: "bg-indigo-500" },
-        { titulo: "Pendiente", valor: "14k €", cambio: "-5%", icono: AlertCircle, color: "bg-amber-500" },
+        { titulo: "Obras Activas", valor: obrasActivas.toString(), cambio: "Aceptadas", icono: MapPin, color: "bg-blue-500" },
+        { titulo: "Presupuestos", valor: totalPresupuestos.toString(), cambio: "Total", icono: TrendingUp, color: "bg-emerald-500" },
+        { titulo: "Facturas", valor: facturas.length.toString(), cambio: "Emitidas", icono: CheckCircle2, color: "bg-indigo-500" },
+        { titulo: "Pendiente", valor: pendiente.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' }), cambio: "Por cobrar", icono: AlertCircle, color: "bg-amber-500" },
     ];
+
+    const presupuestosAceptados = presupuestos.filter(p => p.estado === 'aceptado').slice(0, 3);
 
     return (
         <div className="space-y-12 page-transition">
@@ -54,25 +83,33 @@ export default function PanelPage() {
                         <button className="text-[10px] font-black text-blue-600 uppercase tracking-widest hover:translate-x-1 transition-transform">Ver todas →</button>
                     </div>
 
-                    {[1, 2, 3].map((i) => (
-                        <div key={i} className="premium-card p-8 flex items-center justify-between hover:bg-slate-50 transition-all border-l-4 border-l-blue-500 group">
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 rounded-[24px] bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white transition-colors">
-                                    <MapPin size={24} />
-                                </div>
-                                <div>
-                                    <p className="font-black text-slate-900 text-lg uppercase tracking-tight">Reforma Integral Calle Serrano {i}</p>
-                                    <div className="flex items-center gap-4 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                        <span className="flex items-center gap-1.5"><Calendar size={12} className="text-blue-500" /> Finaliza en 2 sem.</span>
-                                        <span className="flex items-center gap-1.5"><Clock size={12} className="text-emerald-500" /> 75% completado</span>
+                    {!cargando && presupuestosAceptados.length === 0 ? (
+                        <div className="premium-card p-10 flex flex-col items-center justify-center text-center text-slate-400">
+                            <FileDigit size={40} className="mb-4 opacity-50" />
+                            <p className="text-sm font-black uppercase tracking-tight">No hay obras activas</p>
+                            <p className="text-[10px] font-bold uppercase tracking-widest mt-1">Acepta presupuestos para verlos aquí</p>
+                        </div>
+                    ) : (
+                        presupuestosAceptados.map((p) => (
+                            <div key={p.id} className="premium-card p-8 flex items-center justify-between hover:bg-slate-50 transition-all border-l-4 border-l-blue-500 group">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-16 h-16 rounded-[24px] bg-slate-100 flex items-center justify-center text-slate-400 group-hover:bg-white transition-colors">
+                                        <MapPin size={24} />
+                                    </div>
+                                    <div>
+                                        <p className="font-black text-slate-900 text-lg uppercase tracking-tight">Presupuesto {p.numero}</p>
+                                        <div className="flex items-center gap-4 mt-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                            <span className="flex items-center gap-1.5"><Calendar size={12} className="text-blue-500" /> {p.fecha}</span>
+                                            <span className="flex items-center gap-1.5"><Clock size={12} className="text-emerald-500" /> {Number(p.total).toFixed(2)} €</span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div className="hidden sm:block w-32 bg-slate-100 h-2 rounded-full overflow-hidden">
+                                    <div className="bg-blue-500 h-full w-[20%] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                                </div>
                             </div>
-                            <div className="hidden sm:block w-32 bg-slate-100 h-2 rounded-full overflow-hidden">
-                                <div className="bg-blue-500 h-full w-[75%] rounded-full shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
-                            </div>
-                        </div>
-                    ))}
+                        ))
+                    )}
                 </div>
 
                 <div className="space-y-8">
