@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { presupuestosStore, clientesStore, facturasStore, recibosStore, gastosStore, type Presupuesto, type Cliente, type Recibo, type Gasto } from "../lib/store";
-import { Plus, FileText, CheckCircle2, Send, Receipt } from "lucide-react";
+import { Plus, FileText, CheckCircle2, Send, Receipt, Camera } from "lucide-react";
 import { Link } from "react-router-dom";
+import ObraGaleriaModal from "../components/ObraGaleriaModal";
 
 const ESTADO_COLORES: Record<string, { bg: string; text: string }> = {
     borrador: { bg: "bg-slate-100", text: "text-slate-500" },
@@ -17,6 +18,7 @@ export default function PresupuestosPage() {
     const [gastos, setGastos] = useState<Gasto[]>([]);
     const [filtro, setFiltro] = useState("todos");
     const [cargando, setCargando] = useState(true);
+    const [galeriaPresupuestoId, setGaleriaPresupuestoId] = useState<string | null>(null);
 
     const cargar = async () => { setCargando(true); setPresupuestos(await presupuestosStore.getAll()); setClientes(await clientesStore.getAll()); setRecibos(await recibosStore.getAll()); setGastos(await gastosStore.getAll()); setCargando(false); };
     useEffect(() => { cargar(); }, []);
@@ -147,9 +149,14 @@ export default function PresupuestosPage() {
                                             </select>
 
                                             {p.estado === 'aceptado' && (
-                                                <button onClick={() => pasarAFactura(p)} className="p-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all border border-purple-100" title="Generar Factura">
-                                                    <Receipt size={16} />
-                                                </button>
+                                                <>
+                                                    <button onClick={() => setGaleriaPresupuestoId(p.id!)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all border border-blue-100" title="Galería de Fotos">
+                                                        <Camera size={16} />
+                                                    </button>
+                                                    <button onClick={() => pasarAFactura(p)} className="p-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all border border-purple-100" title="Generar Factura">
+                                                        <Receipt size={16} />
+                                                    </button>
+                                                </>
                                             )}
                                         </div>
                                     </div>
@@ -158,6 +165,13 @@ export default function PresupuestosPage() {
                         );
                     })}
                 </div>
+            )}
+
+            {galeriaPresupuestoId && (
+                <ObraGaleriaModal
+                    presupuestoId={galeriaPresupuestoId}
+                    onClose={() => setGaleriaPresupuestoId(null)}
+                />
             )}
         </div>
     );
