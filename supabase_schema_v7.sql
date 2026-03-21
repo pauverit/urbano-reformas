@@ -17,4 +17,5 @@ CREATE TABLE IF NOT EXISTS horas_obra (
 
 -- RLS
 ALTER TABLE horas_obra ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Acceso completo horas_obra" ON horas_obra;
 CREATE POLICY "Acceso completo horas_obra" ON horas_obra FOR ALL USING (true) WITH CHECK (true);
