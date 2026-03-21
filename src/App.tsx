@@ -1,4 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 import RootLayout from './layouts/RootLayout';
 import LoginPage from './pages/LoginPage';
 import PanelPage from './pages/PanelPage';
@@ -16,8 +17,11 @@ import GastosPage from './pages/GastosPage';
 import InformesPage from './pages/InformesPage';
 import HorasPage from './pages/HorasPage';
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+
 function App() {
     return (
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
         <Router>
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
@@ -43,6 +47,7 @@ function App() {
                 <Route path="/" element={<Navigate to="/login" replace />} />
             </Routes>
         </Router>
+        </GoogleOAuthProvider>
     );
 }
 
