@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { clientesStore, type Cliente } from "../lib/store";
 import { Plus, Search, Edit3, Trash2, X, Save, Users, Building2, Phone, Mail } from "lucide-react";
 
 export default function ClientesPage() {
+    const navigate = useNavigate();
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [busqueda, setBusqueda] = useState("");
     const [modalOpen, setModalOpen] = useState(false);
@@ -74,27 +76,53 @@ export default function ClientesPage() {
                     <p className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Pulsa "Nuevo Cliente" para empezar</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filtrados.map(c => (
-                        <div key={c.id} className="premium-card p-8 group hover:bg-slate-950 transition-all duration-500">
-                            <div className="flex items-start justify-between mb-6">
-                                <div className="w-14 h-14 rounded-2xl bg-slate-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all text-xl font-black">
-                                    {c.nombre.charAt(0)}
-                                </div>
-                                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button onClick={() => abrirModal(c)} className="p-2 text-slate-400 hover:text-blue-400"><Edit3 size={16} /></button>
-                                    <button onClick={() => eliminar(c.id!)} className="p-2 text-slate-400 hover:text-red-400"><Trash2 size={16} /></button>
-                                </div>
-                            </div>
-                            <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight group-hover:text-white transition-colors">{c.nombre}</h3>
-                            <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mt-1 group-hover:text-blue-400">{c.nif || "Sin NIF"}</p>
-                            <div className="mt-6 pt-6 border-t border-slate-50 group-hover:border-slate-800 space-y-3 text-sm text-slate-400 group-hover:text-slate-300">
-                                {c.direccion && <div className="flex items-center gap-2"><Building2 size={14} /> <span className="font-bold truncate">{c.direccion}, {c.cp} {c.poblacion}</span></div>}
-                                {c.telefono && <div className="flex items-center gap-2"><Phone size={14} /> <span className="font-bold">{c.telefono}</span></div>}
-                                {c.email && <div className="flex items-center gap-2"><Mail size={14} /> <span className="font-bold truncate">{c.email}</span></div>}
-                            </div>
-                        </div>
-                    ))}
+                <div className="premium-card overflow-hidden shadow-xl border border-slate-100">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50/80 text-[9px] uppercase tracking-[0.15em] font-black text-slate-400 border-b border-slate-100">
+                                    <th className="px-6 py-4">Cliente / Empresa</th>
+                                    <th className="px-6 py-4 text-center">NIF / CIF</th>
+                                    <th className="px-6 py-4">Contacto</th>
+                                    <th className="px-6 py-4">Ubicación</th>
+                                    <th className="px-6 py-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50 text-[13px] font-bold text-slate-700 bg-white">
+                                {filtrados.map(c => (
+                                    <tr key={c.id} className="hover:bg-blue-50/40 transition-colors group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all text-sm font-black shadow-sm border border-slate-100 border-b-2">
+                                                    {c.nombre.charAt(0)}
+                                                </div>
+                                                <span className="text-sm font-black text-slate-900 group-hover:text-blue-700 transition-colors cursor-pointer" onClick={() => navigate(`/clientes/${c.id}`)}>{c.nombre}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 font-black text-slate-400 uppercase text-center text-[11px]">{c.nif || "—"}</td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex flex-col gap-1 text-[11px] text-slate-400 font-bold group-hover:text-slate-600">
+                                                {c.telefono && <span className="flex items-center gap-2"><Phone size={12} className="text-slate-300" /> {c.telefono}</span>}
+                                                {c.email && <span className="flex items-center gap-2"><Mail size={12} className="text-slate-300" /> {c.email}</span>}
+                                                {!c.telefono && !c.email && "—"}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 flex flex-col gap-1 text-[11px] text-slate-400 font-bold uppercase group-hover:text-slate-600 mt-2">
+                                            {c.poblacion && <span className="flex items-center gap-2"><Building2 size={12} className="text-slate-300" /> {c.poblacion} {c.provincia ? `(${c.provincia})` : ''}</span>}
+                                            {!c.poblacion && "—"}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => navigate(`/clientes/${c.id}`)} className="px-4 py-2 bg-blue-50 text-[9px] text-blue-600 uppercase tracking-widest font-black rounded-lg hover:bg-blue-600 hover:text-white transition-all border border-blue-100">Ver Ficha</button>
+                                                <button onClick={() => abrirModal(c)} className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-all hover:text-blue-500"><Edit3 size={16} /></button>
+                                                <button onClick={() => eliminar(c.id!)} className="p-2 text-slate-400 hover:bg-red-50 rounded-lg transition-all hover:text-red-500"><Trash2 size={16} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 

@@ -11,6 +11,7 @@ import PersonalPage from './pages/PersonalPage';
 import ClientesPage from './pages/ClientesPage';
 import ArticulosPage from './pages/ArticulosPage';
 import MiEmpresaPage from './pages/MiEmpresaPage';
+import ClienteFichaPage from './pages/ClienteFichaPage';
 import GastosPage from './pages/GastosPage';
 import InformesPage from './pages/InformesPage';
 
@@ -29,6 +30,7 @@ function App() {
                     <Route path="/agenda" element={<AgendaPage />} />
                     <Route path="/personal" element={<PersonalPage />} />
                     <Route path="/clientes" element={<ClientesPage />} />
+                    <Route path="/clientes/:id" element={<ClienteFichaPage />} />
                     <Route path="/articulos" element={<ArticulosPage />} />
                     <Route path="/gastos" element={<GastosPage />} />
                     <Route path="/informes" element={<InformesPage />} />
