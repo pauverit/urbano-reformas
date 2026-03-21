@@ -48,19 +48,27 @@ export default function GastosPage() {
         setForm(newForm);
     };
 
-    const analizarTicket = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const analizarDocumento = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onloadend = () => setFotoPreview(reader.result as string);
-        reader.readAsDataURL(file);
+
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onloadend = () => setFotoPreview(reader.result as string);
+            reader.readAsDataURL(file);
+        } else if (file.type === 'application/pdf') {
+            const reader = new FileReader();
+            reader.onloadend = () => updateForm('pdf_url', reader.result as string);
+            reader.readAsDataURL(file);
+        }
+
         setAnalizando(true);
 
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) {
             await new Promise(r => setTimeout(r, 1500));
-            updateForm('proveedor', 'Leroy Merlin');
-            updateForm('concepto', 'Azulejos baño reforma');
+            updateForm('proveedor', 'Proveedor Demo (PDF/Foto)');
+            updateForm('concepto', 'Material escaneado automáticamente');
             updateForm('base_imponible', 124.79);
             updateForm('iva', 26.21);
             updateForm('total', 151.00);
@@ -71,14 +79,14 @@ export default function GastosPage() {
         try {
             const genAI = new GoogleGenerativeAI(apiKey);
             const base64 = await new Promise<string>((resolve, reject) => { const r = new FileReader(); r.readAsDataURL(file); r.onload = () => resolve((r.result as string).split(',')[1]); r.onerror = reject; });
-            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
             const result = await model.generateContent([
-                `Analiza este ticket/factura y extrae: { "proveedor": "", "concepto": "", "categoria": "material|herramienta|transporte|subcontrata|suministros|otros", "base_imponible": 0, "iva": 0, "total": 0 }. Responde SOLO con JSON.`,
+                `Analiza este documento (ticket o factura) y extrae: { "proveedor": "", "concepto": "", "categoria": "material|herramienta|transporte|subcontrata|suministros|otros", "base_imponible": 0, "iva": 0, "total": 0 }. Responde SOLO con JSON, extrae la base imponible y el iva sin símbolos.`,
                 { inlineData: { data: base64, mimeType: file.type } }
             ]);
             const data = JSON.parse((await result.response).text().replace(/```json|```/g, "").trim());
             Object.entries(data).forEach(([k, v]) => updateForm(k, v));
-        } catch { updateForm('concepto', 'Error al analizar — rellena manualmente'); }
+        } catch (e) { console.error(e); updateForm('concepto', 'Error al analizar — rellena manualmente'); }
         setAnalizando(false);
     };
 
@@ -153,12 +161,12 @@ export default function GastosPage() {
                                     <label className={`premium-card p-6 flex flex-col items-center gap-3 cursor-pointer border-2 border-dashed transition-all ${analizando ? 'border-blue-500 bg-blue-50' : 'border-slate-100 hover:border-blue-300'}`}>
                                         {analizando ? <Loader2 size={32} className="text-blue-500 animate-spin" /> : <Camera size={32} className="text-blue-500" />}
                                         <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{analizando ? 'Analizando...' : 'Foto de Ticket'}</span>
-                                        <input type="file" accept="image/*" className="hidden" onChange={analizarTicket} disabled={analizando} />
+                                        <input type="file" accept="image/*" className="hidden" onChange={analizarDocumento} disabled={analizando} />
                                     </label>
-                                    <label className="premium-card p-6 flex flex-col items-center gap-3 cursor-pointer border-2 border-dashed border-slate-100 hover:border-purple-300 transition-all">
-                                        <FileUp size={32} className="text-purple-500" />
-                                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Subir PDF</span>
-                                        <input type="file" accept=".pdf" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { const reader = new FileReader(); reader.onloadend = () => updateForm('pdf_url', reader.result as string); reader.readAsDataURL(file); } }} />
+                                    <label className={`premium-card p-6 flex flex-col items-center gap-3 cursor-pointer border-2 border-dashed transition-all ${analizando ? 'border-purple-500 bg-purple-50' : 'border-slate-100 hover:border-purple-300'}`}>
+                                        {analizando ? <Loader2 size={32} className="text-purple-500 animate-spin" /> : <FileUp size={32} className="text-purple-500" />}
+                                        <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{analizando ? 'Analizando...' : 'Subir PDF'}</span>
+                                        <input type="file" accept=".pdf" className="hidden" onChange={analizarDocumento} disabled={analizando} />
                                     </label>
                                 </div>
                             )}
