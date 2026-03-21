@@ -314,14 +314,23 @@ Unidades válidas: m2, ml, ut, pa, kg, h.`
     if (cargandoIA) {
         return (
             <div className="max-w-4xl mx-auto page-transition">
-                <div className="premium-card p-10 md:p-20 flex flex-col items-center justify-center text-center gap-8">
-                    {fotos.length > 0 && <div className="flex gap-3 justify-center flex-wrap">{fotos.slice(0, 4).map((f, i) => <img key={i} src={f.preview} className="w-24 h-24 rounded-2xl object-cover shadow-lg border-4 border-white" alt="" />)}</div>}
-                    <div className="relative"><Loader2 className="animate-spin text-blue-500" size={64} /><Sparkles className="absolute -top-2 -right-2 text-amber-500 animate-pulse" size={24} /></div>
-                    <div className="space-y-2">
-                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Cerebro IA Analizando...</h3>
-                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{fotos.length} foto{fotos.length !== 1 && 's'}{audioBlob ? ' + grabación de voz' : ''} — Identificando trabajos y materiales</p>
+                <div className="premium-card p-10 md:p-20 flex flex-col items-center justify-center text-center gap-10 bg-zinc-950 border-zinc-800">
+                    {fotos.length > 0 && <div className="flex gap-3 justify-center flex-wrap">{fotos.slice(0, 4).map((f, i) => <img key={i} src={f.preview} className="w-24 h-24 rounded-2xl object-cover shadow-2xl border-2 border-zinc-800 opacity-80" alt="" />)}</div>}
+
+                    <div className="relative flex justify-center items-center py-6">
+                        <div className="absolute inset-0 bg-cyan-500/20 blur-[50px] rounded-full animate-pulse"></div>
+                        <img src="/metallica.png" alt="Analizando" className="h-24 md:h-32 object-contain animate-pulse drop-shadow-[0_0_25px_rgba(6,182,212,0.8)] relative z-10 filter sepia-[0.2] hue-rotate-180 brightness-150 contrast-125" />
+                        <Sparkles className="absolute -top-6 -right-6 text-cyan-400 animate-ping duration-1000 z-20" size={32} />
+                        <Sparkles className="absolute -bottom-4 -left-4 text-zinc-400 animate-pulse duration-700 z-20" size={24} />
                     </div>
-                    <div className="w-64 bg-slate-100 h-2 rounded-full overflow-hidden"><div className="bg-blue-500 h-full rounded-full animate-pulse" style={{ width: '60%' }}></div></div>
+
+                    <div className="space-y-4 relative z-10 w-full max-w-md">
+                        <h3 className="text-3xl font-black text-white uppercase tracking-[0.1em] drop-shadow-md">Cerebro <span className="text-cyan-400">IA</span> Analizando</h3>
+                        <p className="text-[12px] font-black text-zinc-400 uppercase tracking-widest">{fotos.length} foto{fotos.length !== 1 && 's'}{audioBlob ? ' + grabación de voz' : ''} — Rompiendo Barreras</p>
+                        <div className="w-full bg-zinc-900/80 h-3 rounded-full overflow-hidden border border-zinc-700 shadow-inner mt-6">
+                            <div className="bg-gradient-to-r from-cyan-600 via-cyan-400 to-indigo-500 h-full rounded-full animate-pulse shadow-[0_0_15px_rgba(34,211,238,0.5)]" style={{ width: '60%' }}></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
