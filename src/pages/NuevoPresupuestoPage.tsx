@@ -314,21 +314,20 @@ Unidades válidas: m2, ml, ut, pa, kg, h.`
     if (cargandoIA) {
         return (
             <div className="max-w-4xl mx-auto page-transition">
-                <div className="premium-card p-10 md:p-20 flex flex-col items-center justify-center text-center gap-10 bg-zinc-950 border-zinc-800">
-                    {fotos.length > 0 && <div className="flex gap-3 justify-center flex-wrap">{fotos.slice(0, 4).map((f, i) => <img key={i} src={f.preview} className="w-24 h-24 rounded-2xl object-cover shadow-2xl border-2 border-zinc-800 opacity-80" alt="" />)}</div>}
+                <div className="premium-card p-10 md:p-20 flex flex-col items-center justify-center text-center gap-8 bg-white border-slate-100">
+                    {fotos.length > 0 && <div className="flex gap-3 justify-center flex-wrap">{fotos.slice(0, 4).map((f, i) => <img key={i} src={f.preview} className="w-24 h-24 rounded-2xl object-cover shadow-lg border-4 border-white" alt="" />)}</div>}
 
-                    <div className="relative flex justify-center items-center py-6">
-                        <div className="absolute inset-0 bg-cyan-500/20 blur-[50px] rounded-full animate-pulse"></div>
-                        <img src="/metallica.png" alt="Analizando" className="h-24 md:h-32 object-contain animate-pulse drop-shadow-[0_0_25px_rgba(6,182,212,0.8)] relative z-10 filter sepia-[0.2] hue-rotate-180 brightness-150 contrast-125" />
-                        <Sparkles className="absolute -top-6 -right-6 text-cyan-400 animate-ping duration-1000 z-20" size={32} />
-                        <Sparkles className="absolute -bottom-4 -left-4 text-zinc-400 animate-pulse duration-700 z-20" size={24} />
+                    <div className="relative flex justify-center items-center py-4">
+                        <img src="/metallica.png" alt="Analizando" className="h-16 md:h-20 object-contain opacity-80" />
+                        <Loader2 className="absolute -right-12 animate-spin text-slate-300" size={28} />
+                        <Sparkles className="absolute -top-4 -right-4 text-slate-300 animate-pulse" size={20} />
                     </div>
 
-                    <div className="space-y-4 relative z-10 w-full max-w-md">
-                        <h3 className="text-3xl font-black text-white uppercase tracking-[0.1em] drop-shadow-md">Cerebro <span className="text-cyan-400">IA</span> Analizando</h3>
-                        <p className="text-[12px] font-black text-zinc-400 uppercase tracking-widest">{fotos.length} foto{fotos.length !== 1 && 's'}{audioBlob ? ' + grabación de voz' : ''} — Rompiendo Barreras</p>
-                        <div className="w-full bg-zinc-900/80 h-3 rounded-full overflow-hidden border border-zinc-700 shadow-inner mt-6">
-                            <div className="bg-gradient-to-r from-cyan-600 via-cyan-400 to-indigo-500 h-full rounded-full animate-pulse shadow-[0_0_15px_rgba(34,211,238,0.5)]" style={{ width: '60%' }}></div>
+                    <div className="space-y-3 relative z-10 w-full max-w-md">
+                        <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tight">Cerebro IA Analizando...</h3>
+                        <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{fotos.length} foto{fotos.length !== 1 && 's'}{audioBlob ? ' + grabación de voz' : ''} — Procesando información</p>
+                        <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden mt-6">
+                            <div className="bg-slate-800 h-full rounded-full animate-pulse" style={{ width: '60%' }}></div>
                         </div>
                     </div>
                 </div>
@@ -366,25 +365,25 @@ Unidades válidas: m2, ml, ut, pa, kg, h.`
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead><tr className="bg-slate-50/80 text-[8px] uppercase tracking-[0.15em] font-black text-slate-400 border-b border-slate-100"><th className="px-5 py-3 w-1/2">Descripción</th><th className="px-3 py-3 text-center">Cant.</th><th className="px-3 py-3 text-center">Ud.</th><th className="px-3 py-3 text-right">Precio</th><th className="px-3 py-3 text-right">Total</th><th className="px-3 py-3"></th></tr></thead>
-                        <tbody className="divide-y divide-slate-50 text-[11px] font-bold text-slate-700 bg-white">
+                        <thead><tr className="bg-slate-50/80 text-[10px] uppercase tracking-[0.15em] font-black text-slate-400 border-b border-slate-100"><th className="px-5 py-3 w-1/2">Descripción</th><th className="px-3 py-3 text-center">Cant.</th><th className="px-3 py-3 text-center">Ud.</th><th className="px-3 py-3 text-right">Precio</th><th className="px-3 py-3 text-right">Total</th><th className="px-3 py-3"></th></tr></thead>
+                        <tbody className="divide-y divide-slate-50 text-[12px] font-bold text-slate-700 bg-white">
                             {lineas.map((l, i) => (
                                 <tr key={i} className="hover:bg-blue-50/20 transition-colors group">
                                     <td className="px-5 py-2">
-                                        <input value={l.descripcion} onChange={e => updateLinea(i, 'descripcion', e.target.value)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-full text-slate-900 font-bold uppercase text-[10px] rounded transition-colors" placeholder="Descripción" />
+                                        <input value={l.descripcion} onChange={e => updateLinea(i, 'descripcion', e.target.value)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-full text-slate-900 font-bold uppercase text-[12px] rounded transition-colors" placeholder="Descripción" />
                                     </td>
                                     <td className="px-3 py-2">
-                                        <input type="number" value={l.cantidad} onChange={e => updateLinea(i, 'cantidad', parseFloat(e.target.value) || 0)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-14 text-center rounded transition-colors" />
+                                        <input type="number" value={l.cantidad} onChange={e => updateLinea(i, 'cantidad', parseFloat(e.target.value) || 0)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-16 text-center text-[12px] rounded transition-colors" />
                                     </td>
                                     <td className="px-3 py-2">
-                                        <select value={l.unidad} onChange={e => updateLinea(i, 'unidad', e.target.value)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 text-center text-[9px] font-black uppercase text-slate-400 rounded transition-colors cursor-pointer"><option value="ut">ut</option><option value="m2">m²</option><option value="ml">ml</option><option value="m3">m³</option><option value="kg">kg</option><option value="h">h</option><option value="pa">pa</option></select>
+                                        <select value={l.unidad} onChange={e => updateLinea(i, 'unidad', e.target.value)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 text-center text-[10px] font-black uppercase text-slate-400 rounded transition-colors cursor-pointer"><option value="ut">ut</option><option value="m2">m²</option><option value="ml">ml</option><option value="m3">m³</option><option value="kg">kg</option><option value="h">h</option><option value="pa">pa</option></select>
                                     </td>
                                     <td className="px-3 py-2">
-                                        <input type="number" step="0.01" value={l.precio} onChange={e => updateLinea(i, 'precio', parseFloat(e.target.value) || 0)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-20 text-right rounded transition-colors" />
+                                        <input type="number" step="0.01" value={l.precio} onChange={e => updateLinea(i, 'precio', parseFloat(e.target.value) || 0)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-24 text-right text-[12px] rounded transition-colors" />
                                     </td>
-                                    <td className="px-3 py-2 text-right font-black text-slate-900">{(l.cantidad * l.precio).toFixed(2)} €</td>
+                                    <td className="px-3 py-2 text-right font-black text-slate-900 text-[13px]">{(l.cantidad * l.precio).toFixed(2)} €</td>
                                     <td className="px-3 py-2 text-right">
-                                        <button onClick={() => removeLinea(i)} title="Eliminar línea" className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-40 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                                        <button onClick={() => removeLinea(i)} title="Eliminar línea" className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-40 group-hover:opacity-100 transition-all"><Trash2 size={16} /></button>
                                     </td>
                                 </tr>
                             ))}
