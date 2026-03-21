@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { presupuestosStore, clientesStore, facturasStore, recibosStore, gastosStore, type Presupuesto, type Cliente, type Recibo, type Gasto } from "../lib/store";
-import { Plus, FileText, Receipt, Camera, PenLine } from "lucide-react";
+import { Plus, FileText, Receipt, Camera, PenLine, Trash2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import ObraGaleriaModal from "../components/ObraGaleriaModal";
 
@@ -29,6 +29,14 @@ export default function PresupuestosPage() {
 
     const cambiarEstado = async (id: string, estado: Presupuesto['estado']) => {
         await presupuestosStore.update(id, { estado });
+        await cargar();
+    };
+
+    const borrarPresupuesto = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (!confirm('¿Eliminar este presupuesto? Esta acción no se puede deshacer.')) return;
+        await presupuestosStore.remove(id);
         await cargar();
     };
 
@@ -153,6 +161,12 @@ export default function PresupuestosPage() {
                                             <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigate(`/presupuestos/${p.id}`); }} className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100" title="Firmar Presupuesto">
                                                 <PenLine size={16} />
                                             </button>
+
+                                            {(p.estado === 'borrador' || p.estado === 'enviado') && (
+                                                <button onClick={(e) => borrarPresupuesto(e, p.id!)} className="p-2.5 bg-red-50 text-red-400 rounded-xl hover:bg-red-100 hover:text-red-600 transition-all border border-red-100" title="Eliminar presupuesto">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            )}
 
                                             {p.estado === 'aceptado' && (
                                                 <>
