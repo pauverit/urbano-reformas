@@ -124,15 +124,17 @@ ANALIZA CUIDADOSAMENTE lo que ves en las imágenes y/o lo que se dice en el audi
 - Lo que el cliente pide en el audio (si lo hay)
 - Medidas aproximadas si se pueden estimar
 
-GENERA un presupuesto detallado con TODAS las partidas necesarias para completar la reforma.
-Incluye: demoliciones, albañilería, fontanería, electricidad si aplica, revestimientos, carpintería, pintura, limpieza.
+BASE DE DATOS DE ARTÍCULOS EXISTENTES DEL CLIENTE:
+${JSON.stringify(articulos.map(a => ({ descripcion: a.descripcion, precio: a.precio, unidad: a.unidad })))}
 
-PRECIOS: Usa precios reales del mercado español 2024-2025. Sé preciso.
+INSTRUCCIÓN VITAL: Genera un presupuesto detallado con partidas necesarias. 
+Si algún trabajo coincide con un artículo de tu "BASE DE DATOS DE ARTÍCULOS", es OBLIGATORIO usar EXACTAMENTE esa "descripcion", "precio" y "unidad".
+SI el trabajo no está en la base de datos, inventa tú uno realista (descripcion en MAYÚSCULAS) con precios de mercado español actuales.
 
 Responde EXCLUSIVAMENTE con un JSON válido, sin texto adicional, sin markdown:
 {"items":[{"descripcion":"DESCRIPCIÓN CLARA EN MAYÚSCULAS","cantidad":1,"unidad":"m2","precio":25.50}]}
 
-Unidades válidas: m2 (metros cuadrados), ml (metros lineales), ut (unidades), pa (partida alzada), kg, h (horas).`
+Unidades válidas: m2, ml, ut, pa, kg, h.`
             ];
 
             // Añadir fotos
@@ -355,16 +357,26 @@ Unidades válidas: m2 (metros cuadrados), ml (metros lineales), ut (unidades), p
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
-                        <thead><tr className="bg-slate-50/80 text-[9px] uppercase tracking-[0.15em] font-black text-slate-400"><th className="px-6 py-4 w-1/2">Descripción</th><th className="px-4 py-4 text-center">Cant.</th><th className="px-4 py-4 text-center">Ud.</th><th className="px-4 py-4 text-right">Precio</th><th className="px-4 py-4 text-right">Total</th><th className="px-4 py-4"></th></tr></thead>
-                        <tbody className="divide-y divide-slate-50 text-[13px] font-bold text-slate-700">
+                        <thead><tr className="bg-slate-50/80 text-[8px] uppercase tracking-[0.15em] font-black text-slate-400 border-b border-slate-100"><th className="px-5 py-3 w-1/2">Descripción</th><th className="px-3 py-3 text-center">Cant.</th><th className="px-3 py-3 text-center">Ud.</th><th className="px-3 py-3 text-right">Precio</th><th className="px-3 py-3 text-right">Total</th><th className="px-3 py-3"></th></tr></thead>
+                        <tbody className="divide-y divide-slate-50 text-[11px] font-bold text-slate-700 bg-white">
                             {lineas.map((l, i) => (
-                                <tr key={i} className="hover:bg-blue-50/30 transition-colors group">
-                                    <td className="px-6 py-3"><input value={l.descripcion} onChange={e => updateLinea(i, 'descripcion', e.target.value)} className="bg-transparent border-none p-0 focus:ring-0 w-full text-slate-900 font-bold uppercase text-sm" placeholder="Descripción" /></td>
-                                    <td className="px-4 py-3"><input type="number" value={l.cantidad} onChange={e => updateLinea(i, 'cantidad', parseFloat(e.target.value) || 0)} className="bg-transparent border-none p-0 focus:ring-0 w-16 text-center" /></td>
-                                    <td className="px-4 py-3"><select value={l.unidad} onChange={e => updateLinea(i, 'unidad', e.target.value)} className="bg-transparent border-none p-0 focus:ring-0 text-center text-[9px] font-black uppercase text-slate-400"><option value="ut">ut</option><option value="m2">m²</option><option value="ml">ml</option><option value="m3">m³</option><option value="kg">kg</option><option value="h">h</option><option value="pa">pa</option></select></td>
-                                    <td className="px-4 py-3"><input type="number" step="0.01" value={l.precio} onChange={e => updateLinea(i, 'precio', parseFloat(e.target.value) || 0)} className="bg-transparent border-none p-0 focus:ring-0 w-20 text-right" /></td>
-                                    <td className="px-4 py-3 text-right font-black text-slate-900">{(l.cantidad * l.precio).toFixed(2)} €</td>
-                                    <td className="px-4 py-3"><button onClick={() => removeLinea(i)} className="p-1 text-slate-200 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button></td>
+                                <tr key={i} className="hover:bg-blue-50/20 transition-colors group">
+                                    <td className="px-5 py-2">
+                                        <input value={l.descripcion} onChange={e => updateLinea(i, 'descripcion', e.target.value)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-full text-slate-900 font-bold uppercase text-[10px] rounded transition-colors" placeholder="Descripción" />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <input type="number" value={l.cantidad} onChange={e => updateLinea(i, 'cantidad', parseFloat(e.target.value) || 0)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-14 text-center rounded transition-colors" />
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <select value={l.unidad} onChange={e => updateLinea(i, 'unidad', e.target.value)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 text-center text-[9px] font-black uppercase text-slate-400 rounded transition-colors cursor-pointer"><option value="ut">ut</option><option value="m2">m²</option><option value="ml">ml</option><option value="m3">m³</option><option value="kg">kg</option><option value="h">h</option><option value="pa">pa</option></select>
+                                    </td>
+                                    <td className="px-3 py-2">
+                                        <input type="number" step="0.01" value={l.precio} onChange={e => updateLinea(i, 'precio', parseFloat(e.target.value) || 0)} className="bg-transparent border border-transparent hover:border-slate-200 focus:border-blue-400 p-1.5 focus:ring-0 w-20 text-right rounded transition-colors" />
+                                    </td>
+                                    <td className="px-3 py-2 text-right font-black text-slate-900">{(l.cantidad * l.precio).toFixed(2)} €</td>
+                                    <td className="px-3 py-2 text-right">
+                                        <button onClick={() => removeLinea(i)} title="Eliminar línea" className="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg opacity-40 group-hover:opacity-100 transition-all"><Trash2 size={14} /></button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
