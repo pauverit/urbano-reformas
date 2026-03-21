@@ -105,7 +105,7 @@ export default function AgendaPage() {
 
     const login = useGoogleLogin({
         scope: "https://www.googleapis.com/auth/calendar.events",
-        onSuccess: async (resp) => {
+        onSuccess: async (resp: { access_token: string }) => {
             const tk = resp.access_token;
             localStorage.setItem(GCAL_KEY, tk);
             setToken(tk);
