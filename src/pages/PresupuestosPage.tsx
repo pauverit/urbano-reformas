@@ -91,7 +91,7 @@ export default function PresupuestosPage() {
                         const margen = Number(p.total) > 0 ? (beneficio / Number(p.total)) * 100 : 0;
 
                         return (
-                            <div key={p.id} className="premium-card group">
+                            <Link key={p.id} to={`/presupuestos/${p.id}`} className="premium-card group block hover:shadow-2xl transition-all border border-transparent hover:border-blue-200">
                                 <div className="flex flex-col lg:flex-row lg:items-center p-6 gap-6">
                                     <div className="flex-1 space-y-3">
                                         <div className="flex items-center gap-3 flex-wrap">
@@ -136,10 +136,11 @@ export default function PresupuestosPage() {
                                             </div>
                                         </div>
 
-                                        <div className="flex gap-4 items-center pl-4 border-l border-slate-100">
+                                        <div className="flex gap-4 items-center pl-4 border-l border-slate-100" onClick={(e) => e.preventDefault()}>
                                             <select
                                                 value={p.estado}
-                                                onChange={(e) => cambiarEstado(p.id!, e.target.value as any)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                onChange={(e) => { e.stopPropagation(); cambiarEstado(p.id!, e.target.value as any); }}
                                                 className="text-[10px] font-black uppercase tracking-widest bg-slate-50 border border-slate-200 text-slate-600 rounded-lg px-3 py-2 cursor-pointer outline-none hover:border-blue-400 focus:border-blue-500 transition-all"
                                             >
                                                 <option value="borrador">Borrador</option>
@@ -150,10 +151,10 @@ export default function PresupuestosPage() {
 
                                             {p.estado === 'aceptado' && (
                                                 <>
-                                                    <button onClick={() => setGaleriaPresupuestoId(p.id!)} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all border border-blue-100" title="Galería de Fotos">
+                                                    <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); setGaleriaPresupuestoId(p.id!); }} className="p-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all border border-blue-100" title="Galería de Fotos">
                                                         <Camera size={16} />
                                                     </button>
-                                                    <button onClick={() => pasarAFactura(p)} className="p-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all border border-purple-100" title="Generar Factura">
+                                                    <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); pasarAFactura(p); }} className="p-2.5 bg-purple-50 text-purple-600 rounded-xl hover:bg-purple-100 transition-all border border-purple-100" title="Generar Factura">
                                                         <Receipt size={16} />
                                                     </button>
                                                 </>
@@ -161,7 +162,7 @@ export default function PresupuestosPage() {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </Link>
                         );
                     })}
                 </div>

@@ -295,6 +295,15 @@ export interface ObraFoto {
     created_at?: string;
 }
 
+export interface Personal {
+    id?: string;
+    nombre: string;
+    cargo: string;
+    email: string;
+    telefono: string;
+    status: 'Disponible' | 'En Obra' | 'Baja';
+}
+
 // --- API Empresa (singleton) ---
 
 export const empresaStore = {
@@ -351,5 +360,32 @@ export const obraFotosStore = {
     remove: async (id: string): Promise<void> => {
         const { error } = await supabase.from('obra_fotos').delete().eq('id', id);
         if (error) console.error('Error eliminar foto:', error);
+    },
+};
+
+// --- API Personal ---
+
+export const personalStore = {
+    getAll: async (): Promise<Personal[]> => {
+        const { data, error } = await supabase.from('personal').select('*').order('nombre');
+        if (error) { console.error('Error personal:', error); return []; }
+        return data || [];
+    },
+    getById: async (id: string): Promise<Personal | null> => {
+        const { data } = await supabase.from('personal').select('*').eq('id', id).single();
+        return data;
+    },
+    create: async (p: Omit<Personal, 'id'>): Promise<Personal | null> => {
+        const { data, error } = await supabase.from('personal').insert(p).select().single();
+        if (error) console.error('Error crear personal:', error);
+        return data;
+    },
+    update: async (id: string, p: Partial<Personal>): Promise<void> => {
+        const { error } = await supabase.from('personal').update(p).eq('id', id);
+        if (error) console.error('Error actualizar personal:', error);
+    },
+    remove: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('personal').delete().eq('id', id);
+        if (error) console.error('Error eliminar personal:', error);
     },
 };

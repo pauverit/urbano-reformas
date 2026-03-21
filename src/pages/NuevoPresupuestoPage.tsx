@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
-import { clientesStore, articulosStore, presupuestosStore, empresaStore, type Cliente, type Articulo, type LineaPresupuesto, type Empresa } from "../lib/store";
+import { useNavigate, useParams } from "react-router-dom";
+import { clientesStore, articulosStore, presupuestosStore, empresaStore, type Cliente, type Articulo, type LineaPresupuesto, type Empresa, type Presupuesto } from "../lib/store";
 import SignaturePad from "../components/SignaturePad";
 import { generarPDFPresupuesto } from "../lib/pdfGenerator";
 import { Sparkles, Camera, FileText, Plus, Trash2, Share2, CheckCircle2, Save, Loader2, Search, X, Package, Mic, MicOff, ImagePlus } from "lucide-react";
@@ -24,6 +24,7 @@ const DATOS_SIMULACION: LineaPresupuesto[] = [
 
 export default function NuevoPresupuestoPage() {
     const navigate = useNavigate();
+    const { id } = useParams();
     const [modo, setModo] = useState<'elegir' | 'ia' | 'manual'>('elegir');
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [articulos, setArticulos] = useState<Articulo[]>([]);
@@ -51,8 +52,19 @@ export default function NuevoPresupuestoPage() {
             setClientes(await clientesStore.getAll());
             setArticulos(await articulosStore.getAll());
             setEmpresa(await empresaStore.get());
+
+            if (id) {
+                const p = await presupuestosStore.getById(id);
+                if (p) {
+                    setClienteId(p.cliente_id);
+                    setLineas(p.lineas || []);
+                    setNotas(p.notas || "");
+                    setFirmaUrl(p.firma_url || null);
+                    setModo('manual');
+                }
+            }
         })();
-    }, []);
+    }, [id]);
 
     const subtotal = lineas.reduce((s, l) => s + l.cantidad * l.precio, 0);
     const iva = subtotal * 0.21;
@@ -201,7 +213,11 @@ Unidades válidas: m2, ml, ut, pa, kg, h.`
 
     const guardar = async (estado: 'borrador' | 'enviado' = 'borrador') => {
         if (!clienteId || lineas.length === 0) return;
-        await presupuestosStore.create({ fecha: new Date().toLocaleDateString('es-ES'), cliente_id: clienteId, subtotal, iva, total, estado, firma_url: firmaUrl || undefined, notas }, lineas);
+        if (id) {
+            await presupuestosStore.update(id, { cliente_id: clienteId, subtotal, iva, total, estado, firma_url: firmaUrl || undefined, notas, lineas } as any);
+        } else {
+            await presupuestosStore.create({ fecha: new Date().toLocaleDateString('es-ES'), cliente_id: clienteId, subtotal, iva, total, estado, firma_url: firmaUrl || undefined, notas }, lineas);
+        }
         navigate("/presupuestos");
     };
 
@@ -216,7 +232,7 @@ Unidades válidas: m2, ml, ut, pa, kg, h.`
     if (modo === 'elegir') {
         return (
             <div className="max-w-4xl mx-auto space-y-12 page-transition">
-                <div><h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase">Nuevo Presupuesto</h1><p className="text-blue-500 font-bold uppercase text-[9px] tracking-widest italic mt-2">Elige cómo crear tu presupuesto</p></div>
+                <div><h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase">{id ? 'Editar Presupuesto' : 'Nuevo Presupuesto'}</h1><p className="text-blue-500 font-bold uppercase text-[9px] tracking-widest italic mt-2">Elige cómo {id ? 'actualizar' : 'crear'} tu presupuesto</p></div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <button onClick={() => setModo('manual')} className="premium-card p-4 md:p-6 md:p-12 text-left hover:bg-slate-950 group transition-all duration-500 border-2 border-transparent hover:border-blue-500">
                         <FileText size={48} className="text-blue-500 mb-8 group-hover:text-blue-400" />
@@ -340,7 +356,7 @@ Unidades válidas: m2, ml, ut, pa, kg, h.`
         <div className="max-w-6xl mx-auto space-y-10 pb-24 page-transition">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase">{modo === 'ia' ? 'Presupuesto IA' : 'Nuevo Presupuesto'}</h1>
+                    <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight uppercase">{id ? 'Editar Presupuesto' : modo === 'ia' ? 'Presupuesto IA' : 'Nuevo Presupuesto'}</h1>
                     <p className="text-blue-500 font-bold uppercase text-[9px] tracking-widest italic mt-2">Edita las líneas y asigna un cliente</p>
                 </div>
                 <button onClick={() => { setModo('elegir'); setLineas([]); setFotos([]); setAudioBlob(null); }} className="text-[9px] font-black text-slate-400 uppercase tracking-widest hover:text-red-500">← Empezar de nuevo</button>
@@ -400,7 +416,7 @@ Unidades válidas: m2, ml, ut, pa, kg, h.`
             <div className="premium-card p-8"><label className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3 block">Notas / Condiciones</label><textarea value={notas} onChange={e => setNotas(e.target.value)} rows={3} className="premium-input resize-none" /></div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <button onClick={() => guardar('borrador')} className="premium-card p-5 md:p-8 flex items-center justify-center gap-3 text-slate-600 hover:bg-slate-50 transition-all font-black uppercase text-[9px] tracking-widest"><Save size={20} /> Guardar Borrador</button>
+                <button onClick={() => guardar('borrador')} className="premium-card p-5 md:p-8 flex items-center justify-center gap-3 text-slate-600 hover:bg-slate-50 transition-all font-black uppercase text-[9px] tracking-widest"><Save size={20} /> {id ? 'Actualizar' : 'Guardar Borrador'}</button>
                 <button onClick={() => setMostrandoFirma(true)} className="premium-card p-5 md:p-8 flex items-center justify-center gap-3 text-blue-600 hover:bg-blue-50 transition-all font-black uppercase text-[9px] tracking-widest border-2 border-blue-100"><FileText size={20} /> {firmaUrl ? '✓ Firmado' : 'Firmar'}</button>
                 <button onClick={generarPDF} className="bg-blue-600 text-white p-5 md:p-8 rounded-[32px] flex items-center justify-center gap-3 font-black uppercase text-[9px] tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition-all active:scale-95"><Share2 size={20} /> Generar PDF</button>
             </div>

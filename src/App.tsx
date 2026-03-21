@@ -25,6 +25,7 @@ function App() {
                     <Route path="/panel" element={<PanelPage />} />
                     <Route path="/presupuestos" element={<PresupuestosPage />} />
                     <Route path="/presupuestos/new" element={<NuevoPresupuestoPage />} />
+                    <Route path="/presupuestos/:id" element={<NuevoPresupuestoPage />} />
                     <Route path="/facturas" element={<FacturasPage />} />
                     <Route path="/recibos" element={<RecibosPage />} />
                     <Route path="/agenda" element={<AgendaPage />} />
