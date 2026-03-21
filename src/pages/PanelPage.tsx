@@ -1,6 +1,5 @@
 import {
     Plus,
-    Search,
     MapPin,
     Calendar,
     TrendingUp,
@@ -30,6 +29,15 @@ export default function PanelPage() {
         cargar();
     }, []);
 
+    const parseFecha = (f: string) => {
+        const p = f.split('/');
+        return p.length === 3 ? new Date(+p[2], +p[1] - 1, +p[0]) : new Date();
+    };
+    const facturasVencidas = facturas.filter(f => {
+        if (f.estado !== 'pendiente') return false;
+        return (Date.now() - parseFecha(f.fecha).getTime()) / 86400000 > 30;
+    });
+
     const obrasActivas = presupuestos.filter(p => p.estado === 'aceptado').length;
     const totalPresupuestos = presupuestos.length;
 
@@ -58,6 +66,23 @@ export default function PanelPage() {
                     <Plus size={18} /> Nuevo Presupuesto
                 </Link>
             </header>
+
+            {facturasVencidas.length > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl px-6 py-4 flex items-center gap-4">
+                    <AlertCircle size={20} className="text-amber-500 flex-shrink-0" />
+                    <div className="flex-1">
+                        <p className="text-[11px] font-black text-amber-700 uppercase tracking-widest">
+                            {facturasVencidas.length === 1
+                                ? '1 factura lleva más de 30 días sin cobrar'
+                                : `${facturasVencidas.length} facturas llevan más de 30 días sin cobrar`}
+                        </p>
+                        <p className="text-[10px] font-bold text-amber-500 mt-0.5">
+                            Total pendiente: {facturasVencidas.reduce((s, f) => s + Number(f.total), 0).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                        </p>
+                    </div>
+                    <a href="/facturas" className="text-[10px] font-black text-amber-600 uppercase tracking-widest hover:underline whitespace-nowrap">Ver facturas →</a>
+                </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {estadisticas.map((stat) => (

@@ -12,8 +12,10 @@ import {
     Receipt,
     ShoppingCart,
     BarChart3,
-    Building2
+    Building2,
+    Clock
 } from "lucide-react";
+import { getSession, clearSession } from "../lib/auth";
 
 const navItems = [
     { name: "Inicio", href: "/panel", icon: LayoutDashboard, color: "text-blue-500" },
@@ -23,6 +25,7 @@ const navItems = [
     { name: "Facturas", href: "/facturas", icon: Receipt, color: "text-purple-500" },
     { name: "Recibos", href: "/recibos", icon: Wallet, color: "text-emerald-500" },
     { name: "Gastos", href: "/gastos", icon: ShoppingCart, color: "text-amber-500" },
+    { name: "Horas", href: "/horas", icon: Clock, color: "text-sky-500" },
     { name: "Informes", href: "/informes", icon: BarChart3, color: "text-rose-500" },
     { name: "Agenda", href: "/agenda", icon: Calendar, color: "text-teal-500" },
     { name: "Equipo", href: "/personal", icon: Users, color: "text-pink-500" },
@@ -30,6 +33,7 @@ const navItems = [
 
 export default function Sidebar() {
     const location = useLocation();
+    const session = getSession();
 
     return (
         <div className="w-72 bg-white border-r border-slate-100 h-full flex flex-col p-6 shadow-[10px_0_40px_rgba(0,0,0,0.01)] overflow-y-auto">
@@ -49,7 +53,7 @@ export default function Sidebar() {
                 </div>
                 <div className="overflow-hidden">
                     <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none mb-0.5">Admin</p>
-                    <p className="text-xs font-black text-slate-800 truncate uppercase">Carlos</p>
+                    <p className="text-xs font-black text-slate-800 truncate uppercase">{session?.nombre || session?.usuario || 'Usuario'}</p>
                 </div>
             </div>
 
@@ -80,7 +84,7 @@ export default function Sidebar() {
                     <Building2 size={16} />
                     <span className="font-black text-[9px] uppercase tracking-widest">Mi Empresa</span>
                 </Link>
-                <Link to="/login" className="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-700 transition-colors">
+                <Link to="/login" onClick={clearSession} className="flex items-center gap-3 px-4 py-3 text-red-400 hover:text-red-700 transition-colors">
                     <LogOut size={16} />
                     <span className="font-black text-[9px] uppercase tracking-widest">Salir</span>
                 </Link>

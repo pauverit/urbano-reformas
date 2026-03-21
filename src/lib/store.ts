@@ -410,6 +410,51 @@ export const usuariosStore = {
     },
 };
 
+// --- Tipos v7.0 ---
+
+export interface HoraObra {
+    id?: string;
+    presupuesto_id: string;
+    personal_nombre: string;
+    fecha: string;
+    horas: number;
+    precio_hora: number;
+    total?: number;
+    concepto: string;
+}
+
+// --- API Horas Obra ---
+
+export const horasStore = {
+    getAll: async (): Promise<HoraObra[]> => {
+        const { data, error } = await supabase.from('horas_obra').select('*').order('fecha', { ascending: false });
+        if (error) { console.error('Error horas:', error); return []; }
+        return data || [];
+    },
+    getByPresupuesto: async (presupuestoId: string): Promise<HoraObra[]> => {
+        const { data, error } = await supabase.from('horas_obra').select('*').eq('presupuesto_id', presupuestoId).order('fecha', { ascending: false });
+        if (error) { console.error('Error horas presupuesto:', error); return []; }
+        return data || [];
+    },
+    create: async (h: Omit<HoraObra, 'id' | 'total'>): Promise<HoraObra | null> => {
+        const total = h.horas * h.precio_hora;
+        const { data, error } = await supabase.from('horas_obra').insert({ ...h, total }).select().single();
+        if (error) { console.error('Error crear hora:', error); return null; }
+        return data;
+    },
+    update: async (id: string, h: Partial<HoraObra>): Promise<void> => {
+        const payload = (h.horas !== undefined && h.precio_hora !== undefined)
+            ? { ...h, total: h.horas * h.precio_hora }
+            : h;
+        const { error } = await supabase.from('horas_obra').update(payload).eq('id', id);
+        if (error) console.error('Error actualizar hora:', error);
+    },
+    remove: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('horas_obra').delete().eq('id', id);
+        if (error) console.error('Error eliminar hora:', error);
+    },
+};
+
 // --- API Personal ---
 
 export const personalStore = {

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Lock, User, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
 import { usuariosStore } from "../lib/store";
+import { saveSession } from "../lib/auth";
 
 export default function LoginPage() {
     const [user, setUser] = useState("");
@@ -18,6 +19,7 @@ export default function LoginPage() {
         const found = await usuariosStore.login(user.trim(), pass);
         setCargando(false);
         if (found) {
+            saveSession({ id: found.id!, usuario: found.usuario, nombre: found.nombre || found.usuario });
             navigate("/panel");
         } else {
             setError(true);

@@ -14,6 +14,7 @@ import MiEmpresaPage from './pages/MiEmpresaPage';
 import ClienteFichaPage from './pages/ClienteFichaPage';
 import GastosPage from './pages/GastosPage';
 import InformesPage from './pages/InformesPage';
+import HorasPage from './pages/HorasPage';
 
 function App() {
     return (
@@ -34,6 +35,7 @@ function App() {
                     <Route path="/clientes/:id" element={<ClienteFichaPage />} />
                     <Route path="/articulos" element={<ArticulosPage />} />
                     <Route path="/gastos" element={<GastosPage />} />
+                    <Route path="/horas" element={<HorasPage />} />
                     <Route path="/informes" element={<InformesPage />} />
                     <Route path="/mi-empresa" element={<MiEmpresaPage />} />
                 </Route>

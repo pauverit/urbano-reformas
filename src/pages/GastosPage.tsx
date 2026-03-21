@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { gastosStore, presupuestosStore, type Gasto, type Presupuesto } from "../lib/store";
-import { Plus, Search, Edit3, Trash2, X, Save, Receipt, Camera, FileUp, Tag, Loader2, Sparkles } from "lucide-react";
+import { Plus, Search, Edit3, Trash2, X, Save, Receipt, Camera, FileUp, Loader2, Download } from "lucide-react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import * as XLSX from 'xlsx';
 
 const CATEGORIAS: Record<string, { label: string; color: string }> = {
     material: { label: "Material", color: "bg-amber-50 text-amber-600" },
@@ -101,6 +102,26 @@ export default function GastosPage() {
 
     const eliminar = async (id: string) => { if (confirm("¿Eliminar?")) { await gastosStore.remove(id); await cargar(); } };
 
+    const exportarExcel = () => {
+        const data = filtrados.map(g => ({
+            'Número': g.numero || '',
+            'Fecha': g.fecha,
+            'Proveedor': g.proveedor,
+            'Concepto': g.concepto,
+            'Categoría': CATEGORIAS[g.categoria]?.label || g.categoria,
+            'Base Imponible (€)': Number(g.base_imponible),
+            'IVA %': Number(g.iva_porcentaje),
+            'IVA (€)': Number(g.iva),
+            'Total (€)': Number(g.total),
+            'Notas': g.notas || '',
+        }));
+        const ws = XLSX.utils.json_to_sheet(data);
+        ws['!cols'] = [8, 12, 20, 30, 14, 18, 8, 10, 12, 25].map(w => ({ wch: w }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Gastos');
+        XLSX.writeFile(wb, `gastos_${mesFiltro ? mesFiltro.replace(/\//g, '') : 'todos'}.xlsx`);
+    };
+
     return (
         <div className="space-y-10 page-transition">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -108,7 +129,12 @@ export default function GastosPage() {
                     <h1 className="text-4xl font-black text-slate-900 tracking-tight mb-2 uppercase">Gastos</h1>
                     <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest italic">OCR de Tickets, Facturas de Proveedor y Control de Costes</p>
                 </div>
-                <button onClick={() => { setEditando(null); setForm(FORM_VACIO); setFotoPreview(null); setModalOpen(true); }} className="premium-button flex items-center gap-3"><Plus size={18} /> Nuevo Gasto</button>
+                <div className="flex gap-3">
+                    <button onClick={exportarExcel} disabled={filtrados.length === 0} className="flex items-center gap-2 px-5 py-3 bg-emerald-50 text-emerald-700 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all disabled:opacity-40 disabled:cursor-not-allowed border border-emerald-100">
+                        <Download size={16} /> Excel
+                    </button>
+                    <button onClick={() => { setEditando(null); setForm(FORM_VACIO); setFotoPreview(null); setModalOpen(true); }} className="premium-button flex items-center gap-3"><Plus size={18} /> Nuevo Gasto</button>
+                </div>
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

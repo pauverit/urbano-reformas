@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { presupuestosStore, clientesStore, facturasStore, recibosStore, gastosStore, type Presupuesto, type Cliente, type Recibo, type Gasto } from "../lib/store";
-import { Plus, FileText, CheckCircle2, Send, Receipt, Camera } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Plus, FileText, Receipt, Camera, PenLine } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import ObraGaleriaModal from "../components/ObraGaleriaModal";
 
 const ESTADO_COLORES: Record<string, { bg: string; text: string }> = {
@@ -19,6 +19,7 @@ export default function PresupuestosPage() {
     const [filtro, setFiltro] = useState("todos");
     const [cargando, setCargando] = useState(true);
     const [galeriaPresupuestoId, setGaleriaPresupuestoId] = useState<string | null>(null);
+    const navigate = useNavigate();
 
     const cargar = async () => { setCargando(true); setPresupuestos(await presupuestosStore.getAll()); setClientes(await clientesStore.getAll()); setRecibos(await recibosStore.getAll()); setGastos(await gastosStore.getAll()); setCargando(false); };
     useEffect(() => { cargar(); }, []);
@@ -148,6 +149,10 @@ export default function PresupuestosPage() {
                                                 <option value="aceptado">Aceptado</option>
                                                 <option value="facturado">Facturado</option>
                                             </select>
+
+                                            <button onClick={(e) => { e.stopPropagation(); e.preventDefault(); navigate(`/presupuestos/${p.id}`); }} className="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all border border-emerald-100" title="Firmar Presupuesto">
+                                                <PenLine size={16} />
+                                            </button>
 
                                             {p.estado === 'aceptado' && (
                                                 <>

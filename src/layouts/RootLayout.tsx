@@ -1,8 +1,11 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, Navigate } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import MobileNav from '../components/MobileNav';
+import { getSession } from '../lib/auth';
 
 export default function RootLayout() {
+    if (!getSession()) return <Navigate to="/login" replace />;
+
     return (
         <div className="flex h-screen overflow-hidden bg-slate-50">
             <div className="hidden md:block">

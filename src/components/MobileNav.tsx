@@ -9,20 +9,22 @@ import {
     Package,
     Receipt,
     ShoppingCart,
-    BarChart3
+    BarChart3,
+    Clock
 } from "lucide-react";
 
 const navItems = [
     { name: "Inicio", href: "/panel", icon: LayoutDashboard },
     { name: "Ptos", href: "/presupuestos", icon: FileDigit },
     { name: "Clientes", href: "/clientes", icon: UserCircle },
-    { name: "Artic.", href: "/articulos", icon: Package },
     { name: "Facturas", href: "/facturas", icon: Receipt },
     { name: "Recibos", href: "/recibos", icon: Wallet },
     { name: "Gastos", href: "/gastos", icon: ShoppingCart },
+    { name: "Horas", href: "/horas", icon: Clock },
     { name: "Informes", href: "/informes", icon: BarChart3 },
     { name: "Agenda", href: "/agenda", icon: Calendar },
     { name: "Equipo", href: "/personal", icon: Users },
+    { name: "Artic.", href: "/articulos", icon: Package },
 ];
 
 export default function MobileNav() {
