@@ -363,6 +363,53 @@ export const obraFotosStore = {
     },
 };
 
+// --- Tipos v6.0 ---
+
+export interface Usuario {
+    id?: string;
+    usuario: string;
+    password: string;
+    nombre: string;
+    activo: boolean;
+}
+
+// --- API Usuarios ---
+
+export const usuariosStore = {
+    getAll: async (): Promise<Usuario[]> => {
+        const { data, error } = await supabase.from('usuarios').select('*').order('nombre');
+        if (error) { console.error('Error usuarios:', error); return []; }
+        return data || [];
+    },
+    login: async (usuarioInput: string, passwordInput: string): Promise<Usuario | null> => {
+        const { data, error } = await supabase
+            .from('usuarios')
+            .select('*')
+            .ilike('usuario', usuarioInput)
+            .eq('password', passwordInput)
+            .eq('activo', true)
+            .limit(1)
+            .single();
+        if (error) return null;
+        return data;
+    },
+    create: async (u: Omit<Usuario, 'id'>): Promise<Usuario | null> => {
+        const { data, error } = await supabase.from('usuarios').insert({ ...u, usuario: u.usuario.toLowerCase() }).select().single();
+        if (error) { console.error('Error crear usuario:', error); return null; }
+        return data;
+    },
+    update: async (id: string, u: Partial<Usuario>): Promise<boolean> => {
+        const payload = u.usuario ? { ...u, usuario: u.usuario.toLowerCase() } : u;
+        const { error } = await supabase.from('usuarios').update(payload).eq('id', id);
+        if (error) { console.error('Error actualizar usuario:', error); return false; }
+        return true;
+    },
+    remove: async (id: string): Promise<void> => {
+        const { error } = await supabase.from('usuarios').delete().eq('id', id);
+        if (error) console.error('Error eliminar usuario:', error);
+    },
+};
+
 // --- API Personal ---
 
 export const personalStore = {

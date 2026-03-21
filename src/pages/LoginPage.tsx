@@ -1,16 +1,26 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Lock, User, ArrowRight, Sparkles } from "lucide-react";
+import { Lock, User, ArrowRight, Sparkles, AlertCircle } from "lucide-react";
+import { usuariosStore } from "../lib/store";
 
 export default function LoginPage() {
     const [user, setUser] = useState("");
     const [pass, setPass] = useState("");
+    const [error, setError] = useState(false);
+    const [cargando, setCargando] = useState(false);
     const navigate = useNavigate();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        if (user === "carlos" && pass === "1234") {
+        if (!user.trim() || !pass.trim()) return;
+        setCargando(true);
+        setError(false);
+        const found = await usuariosStore.login(user.trim(), pass);
+        setCargando(false);
+        if (found) {
             navigate("/panel");
+        } else {
+            setError(true);
         }
     };
 
@@ -43,7 +53,9 @@ export default function LoginPage() {
                                     placeholder="USUARIO"
                                     className="premium-input pl-14"
                                     value={user}
-                                    onChange={(e) => setUser(e.target.value)}
+                                    onChange={(e) => { setUser(e.target.value); setError(false); }}
+                                    autoCapitalize="none"
+                                    autoCorrect="off"
                                 />
                             </div>
                         </div>
@@ -57,17 +69,32 @@ export default function LoginPage() {
                                     placeholder="••••••••"
                                     className="premium-input pl-14 tracking-[0.3em]"
                                     value={pass}
-                                    onChange={(e) => setPass(e.target.value)}
+                                    onChange={(e) => { setPass(e.target.value); setError(false); }}
                                 />
                             </div>
                         </div>
 
+                        {error && (
+                            <div className="flex items-center gap-2 px-4 py-3 bg-red-50 rounded-xl text-red-600">
+                                <AlertCircle size={15} />
+                                <span className="text-[10px] font-black uppercase tracking-widest">Usuario o contraseña incorrectos</span>
+                            </div>
+                        )}
+
                         <button
                             type="submit"
-                            className="premium-button w-full mt-6 py-6 group hover:translate-y-[-2px] hover:shadow-2xl hover:shadow-blue-200"
+                            disabled={cargando}
+                            className="premium-button w-full mt-6 py-6 group hover:translate-y-[-2px] hover:shadow-2xl hover:shadow-blue-200 disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             <span className="flex items-center justify-center gap-3">
-                                Iniciar Sesión <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" />
+                                {cargando ? (
+                                    <span className="flex items-center gap-3">
+                                        <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        Verificando...
+                                    </span>
+                                ) : (
+                                    <>Iniciar Sesión <ArrowRight size={18} className="group-hover:translate-x-2 transition-transform" /></>
+                                )}
                             </span>
                         </button>
                     </form>

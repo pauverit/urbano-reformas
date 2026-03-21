@@ -1,7 +1,214 @@
 import { useState, useEffect } from "react";
-import { empresaStore, type Empresa } from "../lib/store";
-import { Building2, Save, CheckCircle2, Upload, CreditCard, FileText, Settings } from "lucide-react";
+import { empresaStore, usuariosStore, type Empresa, type Usuario } from "../lib/store";
+import { Building2, Save, CheckCircle2, Upload, CreditCard, FileText, KeyRound, UserPlus, Pencil, Trash2, Eye, EyeOff, X, Check } from "lucide-react";
 
+// ——— Sección Usuarios ———
+function SeccionUsuarios() {
+    const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+    const [cargando, setCargando] = useState(true);
+    const [editId, setEditId] = useState<string | null>(null);
+    const [modoNuevo, setModoNuevo] = useState(false);
+    const [form, setForm] = useState({ usuario: '', password: '', pass2: '', nombre: '', activo: true });
+    const [verPass, setVerPass] = useState(false);
+    const [msg, setMsg] = useState<{ tipo: 'ok' | 'err'; texto: string } | null>(null);
+
+    const cargar = async () => {
+        setCargando(true);
+        setUsuarios(await usuariosStore.getAll());
+        setCargando(false);
+    };
+
+    useEffect(() => { cargar(); }, []);
+
+    const mostrarMsg = (tipo: 'ok' | 'err', texto: string) => {
+        setMsg({ tipo, texto });
+        setTimeout(() => setMsg(null), 3000);
+    };
+
+    const abrirEdicion = (u: Usuario) => {
+        setEditId(u.id!);
+        setForm({ usuario: u.usuario, password: '', pass2: '', nombre: u.nombre, activo: u.activo });
+        setModoNuevo(false);
+        setVerPass(false);
+    };
+
+    const abrirNuevo = () => {
+        setEditId(null);
+        setModoNuevo(true);
+        setForm({ usuario: '', password: '', pass2: '', nombre: '', activo: true });
+        setVerPass(false);
+    };
+
+    const cancelar = () => { setEditId(null); setModoNuevo(false); };
+
+    const guardarEdicion = async () => {
+        if (!form.usuario.trim()) return mostrarMsg('err', 'El nombre de usuario es obligatorio.');
+        if (form.password && form.password !== form.pass2) return mostrarMsg('err', 'Las contraseñas no coinciden.');
+        const payload: Partial<Usuario> = { usuario: form.usuario, nombre: form.nombre, activo: form.activo };
+        if (form.password) payload.password = form.password;
+        const ok = await usuariosStore.update(editId!, payload);
+        if (ok) { mostrarMsg('ok', 'Usuario actualizado.'); cancelar(); cargar(); }
+        else mostrarMsg('err', 'Error al guardar. Inténtalo de nuevo.');
+    };
+
+    const guardarNuevo = async () => {
+        if (!form.usuario.trim()) return mostrarMsg('err', 'El nombre de usuario es obligatorio.');
+        if (!form.password) return mostrarMsg('err', 'La contraseña es obligatoria.');
+        if (form.password !== form.pass2) return mostrarMsg('err', 'Las contraseñas no coinciden.');
+        const u = await usuariosStore.create({ usuario: form.usuario, password: form.password, nombre: form.nombre, activo: form.activo });
+        if (u) { mostrarMsg('ok', 'Usuario creado.'); cancelar(); cargar(); }
+        else mostrarMsg('err', 'Error al crear. ¿Ya existe ese usuario?');
+    };
+
+    const eliminar = async (u: Usuario) => {
+        if (usuarios.length <= 1) return mostrarMsg('err', 'Debe haber al menos un usuario.');
+        if (!confirm(`¿Eliminar el usuario "${u.usuario}"?`)) return;
+        await usuariosStore.remove(u.id!);
+        cargar();
+    };
+
+    return (
+        <div className="premium-card p-8 space-y-6">
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <KeyRound size={20} className="text-violet-500" />
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tight">Acceso y Usuarios</h3>
+                </div>
+                {!modoNuevo && !editId && (
+                    <button onClick={abrirNuevo} className="flex items-center gap-2 px-4 py-2 bg-violet-50 text-violet-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-100 transition-all">
+                        <UserPlus size={14} /> Nuevo Usuario
+                    </button>
+                )}
+            </div>
+
+            {msg && (
+                <div className={`px-4 py-3 rounded-xl text-[11px] font-bold uppercase tracking-wide ${msg.tipo === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                    {msg.texto}
+                </div>
+            )}
+
+            {cargando ? (
+                <div className="flex justify-center py-6"><div className="animate-spin w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full" /></div>
+            ) : (
+                <div className="space-y-3">
+                    {usuarios.map(u => (
+                        <div key={u.id} className="border border-slate-100 rounded-2xl overflow-hidden">
+                            {/* Fila normal */}
+                            {editId !== u.id && (
+                                <div className="flex items-center justify-between px-5 py-4">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-9 h-9 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600 font-black text-sm uppercase">
+                                            {(u.nombre || u.usuario).charAt(0)}
+                                        </div>
+                                        <div>
+                                            <p className="font-black text-slate-800 text-sm">{u.nombre || u.usuario}</p>
+                                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">@{u.usuario}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${u.activo ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-400'}`}>
+                                            {u.activo ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                        <button onClick={() => abrirEdicion(u)} className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all">
+                                            <Pencil size={14} />
+                                        </button>
+                                        <button onClick={() => eliminar(u)} className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Formulario edición */}
+                            {editId === u.id && (
+                                <div className="p-5 bg-slate-50/50 space-y-4">
+                                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">Editando usuario</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Nombre</label>
+                                            <input value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} className="premium-input" placeholder="Nombre completo" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Usuario (login)</label>
+                                            <input value={form.usuario} onChange={e => setForm(f => ({ ...f, usuario: e.target.value }))} className="premium-input" placeholder="carlos" />
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Nueva Contraseña <span className="text-slate-300">(dejar vacío para no cambiar)</span></label>
+                                            <div className="relative">
+                                                <input type={verPass ? 'text' : 'password'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="premium-input pr-12" placeholder="••••••" />
+                                                <button type="button" onClick={() => setVerPass(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                                    {verPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Repetir Contraseña</label>
+                                            <input type={verPass ? 'text' : 'password'} value={form.pass2} onChange={e => setForm(f => ({ ...f, pass2: e.target.value }))} className="premium-input" placeholder="••••••" />
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <input type="checkbox" checked={form.activo} onChange={e => setForm(f => ({ ...f, activo: e.target.checked }))} className="w-4 h-4 accent-violet-600" />
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Usuario activo</span>
+                                        </label>
+                                    </div>
+                                    <div className="flex gap-3 pt-1">
+                                        <button onClick={guardarEdicion} className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-all">
+                                            <Check size={14} /> Guardar
+                                        </button>
+                                        <button onClick={cancelar} className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">
+                                            <X size={14} /> Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Formulario nuevo usuario */}
+                    {modoNuevo && (
+                        <div className="border border-violet-100 rounded-2xl p-5 bg-violet-50/30 space-y-4">
+                            <p className="text-[10px] font-black text-violet-500 uppercase tracking-widest mb-3">Nuevo usuario</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Nombre</label>
+                                    <input value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} className="premium-input" placeholder="Nombre completo" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Usuario (login) *</label>
+                                    <input value={form.usuario} onChange={e => setForm(f => ({ ...f, usuario: e.target.value }))} className="premium-input" placeholder="carlos" />
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Contraseña *</label>
+                                    <div className="relative">
+                                        <input type={verPass ? 'text' : 'password'} value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="premium-input pr-12" placeholder="••••••" />
+                                        <button type="button" onClick={() => setVerPass(v => !v)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">
+                                            {verPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-1.5 block">Repetir Contraseña *</label>
+                                    <input type={verPass ? 'text' : 'password'} value={form.pass2} onChange={e => setForm(f => ({ ...f, pass2: e.target.value }))} className="premium-input" placeholder="••••••" />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-1">
+                                <button onClick={guardarNuevo} className="flex items-center gap-2 px-5 py-2.5 bg-violet-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-all">
+                                    <UserPlus size={14} /> Crear Usuario
+                                </button>
+                                <button onClick={cancelar} className="flex items-center gap-2 px-5 py-2.5 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all">
+                                    <X size={14} /> Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ——— Página principal ———
 export default function MiEmpresaPage() {
     const [empresa, setEmpresa] = useState<Empresa | null>(null);
     const [cargando, setCargando] = useState(true);
@@ -140,7 +347,10 @@ export default function MiEmpresaPage() {
                 </div>
             </div>
 
-            {/* Botón Guardar */}
+            {/* Acceso y Usuarios */}
+            <SeccionUsuarios />
+
+            {/* Botón Guardar empresa */}
             <div className="flex justify-end">
                 <button onClick={guardar} className={`px-10 py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-3 shadow-xl transition-all active:scale-95 border-none ${guardado ? 'bg-emerald-500 text-white shadow-emerald-100' : 'bg-blue-600 text-white shadow-blue-100 hover:bg-blue-700'}`}>
                     {guardado ? <><CheckCircle2 size={18} /> Guardado</> : <><Save size={18} /> Guardar Cambios</>}
