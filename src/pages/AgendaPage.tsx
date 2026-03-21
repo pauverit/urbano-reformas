@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
-import { useGoogleLogin } from "@react-oauth/google";
+import { useGoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { Calendar, ChevronLeft, ChevronRight, Plus, LogIn, LogOut, MapPin, Clock, Loader2, X, Trash2 } from "lucide-react";
+
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
 
 const GCAL_KEY = "urbano_gcal_token";
 const GCAL_USER_KEY = "urbano_gcal_user";
@@ -40,7 +42,7 @@ function eventColor(colorId?: string): string {
     return map[colorId || ""] || "bg-blue-500";
 }
 
-export default function AgendaPage() {
+function AgendaInterna() {
     const today = new Date();
     const [año, setAño] = useState(today.getFullYear());
     const [mes, setMes] = useState(today.getMonth());
@@ -449,5 +451,13 @@ export default function AgendaPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function AgendaPage() {
+    return (
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+            <AgendaInterna />
+        </GoogleOAuthProvider>
     );
 }
